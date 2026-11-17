@@ -74,6 +74,19 @@
             z-index: 45;
         }
 
+        /* 후보 교체 대상 하이라이트 */
+        .player-token.sub-target-highlight > div {
+            box-shadow: 0 0 0 4px #facc15, 0 0 20px rgba(250, 204, 21, 0.85);
+            transform: scale(1.1);
+        }
+        .player-token.sub-candidate-pulse > div {
+            animation: pulseSubRing 1.4s infinite;
+        }
+        @keyframes pulseSubRing {
+            0%, 100% { box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.45); }
+            50% { box-shadow: 0 0 0 5px rgba(250, 204, 21, 0.9); }
+        }
+
         /* 도구 버튼 활성화 스타일 */
         .tool-btn.active {
             background-color: #2563eb;
@@ -217,24 +230,44 @@
         </aside>
 
         <!-- 중앙: 배구 코트 스테이지 -->
-        <section id="stageArea" class="flex-1 bg-slate-950 flex items-center justify-center p-3 sm:p-6 relative overflow-hidden">
-            <!-- 코트 래퍼 (JS가 비율에 맞게 크기 자동 조정) -->
-            <div id="courtWrapper" class="court-wrapper rounded-xl overflow-hidden bg-sky-900 border-4 border-slate-800">
-                <!-- 1. 배경 코트 SVG/Canvas (FIVB 국제 규격 비율 18m x 9m + 프리존) -->
-                <canvas id="courtBgCanvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
-                
-                <!-- 2. 전술 드로잉 Canvas -->
-                <canvas id="drawCanvas" class="absolute inset-0 w-full h-full z-10"></canvas>
+        <section id="stageArea" class="flex-1 bg-slate-950 flex flex-col items-center justify-between p-2.5 sm:p-4 relative overflow-hidden gap-2">
+            <!-- 코트 정렬 영역 -->
+            <div id="courtCenterBox" class="flex-1 w-full flex items-center justify-center min-h-0 relative">
+                <!-- 코트 래퍼 (JS가 비율에 맞게 크기 자동 조정) -->
+                <div id="courtWrapper" class="court-wrapper rounded-xl overflow-hidden bg-sky-900 border-4 border-slate-800">
+                    <!-- 1. 배경 코트 SVG/Canvas -->
+                    <canvas id="courtBgCanvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+                    
+                    <!-- 2. 전술 드로잉 Canvas -->
+                    <canvas id="drawCanvas" class="absolute inset-0 w-full h-full z-10"></canvas>
 
-                <!-- 3. 선수 및 배구공 토큰 레이어 -->
-                <div id="tokensLayer" class="absolute inset-0 w-full h-full pointer-events-none"></div>
+                    <!-- 3. 선수 및 배구공 토큰 레이어 -->
+                    <div id="tokensLayer" class="absolute inset-0 w-full h-full pointer-events-none"></div>
+                </div>
             </div>
 
-            <!-- 하단 플로팅 힌트 바 -->
-            <div class="absolute bottom-2 left-1/2 -translate-x-1/2 bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-3.5 py-1.5 rounded-full text-[11px] text-slate-300 flex items-center gap-3 pointer-events-none whitespace-nowrap shadow-lg">
-                <span>💡 <strong>선수 더블클릭</strong>: 이름 즉시 수정</span>
-                <span class="text-slate-600">|</span>
-                <span><strong>드래그</strong>: 위치 이동</span>
+            <!-- 코트 영역 하단: 후보 선수 (BENCH) 전용 바 -->
+            <div id="benchBar" class="w-full max-w-4xl bg-slate-900/95 backdrop-blur-md border border-slate-700/90 rounded-xl px-3 py-2 shadow-xl z-20 shrink-0">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black tracking-wider">BENCH</span>
+                        <span class="text-xs font-bold text-slate-200">후보 선수 대기석</span>
+                        <span id="subStatusHint" class="text-[11px] text-slate-400 hidden sm:inline">· 후보 칩을 코트 위 같은 팀 선수에게 드래그하거나 클릭 후 코트 선수를 클릭해 교체</span>
+                    </div>
+                    <button id="btnCancelSub" onclick="cancelSubSelection()" class="hidden px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold transition">교체 취소 ✕</button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <!-- 우리 팀 벤치 -->
+                    <div class="flex items-center gap-1.5 bg-slate-800/75 rounded-lg px-2 py-1.5 border border-blue-500/25 min-h-[38px] overflow-x-auto">
+                        <span class="text-[10px] font-bold text-blue-400 shrink-0">우리팀:</span>
+                        <div id="homeBenchChips" class="flex items-center gap-1.5 flex-wrap"></div>
+                    </div>
+                    <!-- 상대 팀 벤치 -->
+                    <div id="awayBenchChips" class="flex items-center gap-1.5 bg-slate-800/75 rounded-lg px-2 py-1.5 border border-rose-500/25 min-h-[38px] overflow-x-auto">
+                        <span class="text-[10px] font-bold text-rose-400 shrink-0">상대팀:</span>
+                        <div id="awayBenchChipsList" class="flex items-center gap-1.5 flex-wrap"></div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -284,6 +317,39 @@
                         </div>
                     </div>
                     <div id="awayRosterList" class="space-y-1.5"></div>
+                </div>
+
+                <!-- 후보 선수 관리 (벤치 추가/수정/삭제/교체) -->
+                <div class="bg-slate-800/70 rounded-xl p-3 border border-amber-500/30 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>
+                            <h3 class="text-xs font-bold text-amber-300">후보 선수 관리 (BENCH)</h3>
+                        </div>
+                        <span id="benchCountBadge" class="text-[10px] text-slate-400 font-semibold">0명 대기중</span>
+                    </div>
+
+                    <!-- 새 후보 선수 추가 폼 -->
+                    <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-700/80 space-y-1.5">
+                        <div class="flex gap-1.5">
+                            <select id="newSubTeam" class="bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-[11px] font-bold text-white focus:outline-none">
+                                <option value="home">우리팀</option>
+                                <option value="away">상대팀</option>
+                            </select>
+                            <input type="text" id="newSubName" maxlength="8" placeholder="후보 이름 입력"
+                                onkeydown="if(event.key==='Enter') addBenchPlayer()"
+                                class="flex-1 min-w-0 bg-slate-800 border border-slate-600 focus:border-amber-400 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none">
+                            <select id="newSubPos" class="bg-slate-800 border border-slate-600 rounded px-1.5 py-1.5 text-[11px] font-bold text-slate-200 focus:outline-none">
+                                <!-- JS 동적 생성 -->
+                            </select>
+                        </div>
+                        <button onclick="addBenchPlayer()" class="w-full py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black transition shadow-xs">
+                            + 후보 선수 추가
+                        </button>
+                    </div>
+
+                    <!-- 등록된 후보 선수 목록 -->
+                    <div id="benchRosterList" class="space-y-1.5"></div>
                 </div>
 
             </div>
@@ -458,79 +524,37 @@
             { code: 'BR', label: 'BR (후위 라이트)' }
         ];
 
+        const BENCH_POSITIONS_6 = ['S', 'OH', 'MB', 'OP', 'L', 'SUB'];
+        const BENCH_POSITIONS_9 = ['S', '전위', '중위', '후위', 'SUB'];
+
+        function createDefaultBench6() {
+            return [
+                { id: 'b6_1', team: 'home', name: '유광우', pos: 'S' },
+                { id: 'b6_2', team: 'home', name: '정한용', pos: 'OH' },
+                { id: 'b6_3', team: 'away', name: '교체1',  pos: 'SUB' }
+            ];
+        }
+
+        function createDefaultBench9() {
+            return [
+                { id: 'b9_1', team: 'home', name: '후보1', pos: '전위' },
+                { id: 'b9_2', team: 'home', name: '후보2', pos: '후위' },
+                { id: 'b9_3', team: 'away', name: '상대후보', pos: 'SUB' }
+            ];
+        }
+
         function createDefaultPlayers6() {
-            return [
-                // 우리 팀 (Home - 6명 + 리베로)
-                { id: 'h1', team: 'home', name: '한선수', pos: 'S',  zone: 1, rowTag: 'Z1', x: 80, y: 168, isLibero: false, visible: true },
-                { id: 'h2', team: 'home', name: '정지석', pos: 'OH', zone: 2, rowTag: 'Z2', x: 80, y: 122, isLibero: false, visible: true },
-                { id: 'h3', team: 'home', name: '김규민', pos: 'MB', zone: 3, rowTag: 'Z3', x: 50, y: 118, isLibero: false, visible: true },
-                { id: 'h4', team: 'home', name: '임동혁', pos: 'OP', zone: 4, rowTag: 'Z4', x: 20, y: 122, isLibero: false, visible: true },
-                { id: 'h5', team: 'home', name: '곽승석', pos: 'OH', zone: 5, rowTag: 'Z5', x: 20, y: 168, isLibero: false, visible: true },
-                { id: 'h6', team: 'home', name: '조재영', pos: 'MB', zone: 6, rowTag: 'Z6', x: 50, y: 175, isLibero: false, visible: true },
-                { id: 'hl', team: 'home', name: '오은렬', pos: 'L',  zone: 0, rowTag: 'L',  x: 50, y: 190, isLibero: true,  visible: true },
-
-                // 상대 팀 (Away - 6명 + 리베로)
-                { id: 'a1', team: 'away', name: '세터',   pos: 'S',  zone: 1, rowTag: 'Z1', x: 20, y: 32,  isLibero: false, visible: true },
-                { id: 'a2', team: 'away', name: '아웃1',  pos: 'OH', zone: 2, rowTag: 'Z2', x: 20, y: 78,  isLibero: false, visible: true },
-                { id: 'a3', team: 'away', name: '미들1',  pos: 'MB', zone: 3, rowTag: 'Z3', x: 50, y: 82,  isLibero: false, visible: true },
-                { id: 'a4', team: 'away', name: '아포짓', pos: 'OP', zone: 4, rowTag: 'Z4', x: 80, y: 78,  isLibero: false, visible: true },
-                { id: 'a5', team: 'away', name: '아웃2',  pos: 'OH', zone: 5, rowTag: 'Z5', x: 80, y: 32,  isLibero: false, visible: true },
-                { id: 'a6', team: 'away', name: '미들2',  pos: 'MB', zone: 6, rowTag: 'Z6', x: 50, y: 25,  isLibero: false, visible: true },
-                { id: 'al', team: 'away', name: '리베로', pos: 'L',  zone: 0, rowTag: 'L',  x: 50, y: 10,  isLibero: true,  visible: true }
-            ];
-        }
-
-        function createDefaultPlayers9() {
-            return [
-                // 우리 팀 (Home - 9인제 3×3 배치: 전위3 / 중위3 / 후위3)
-                { id: 'h9_fl', team: 'home', name: '전위좌', pos: 'FL', zone: 1, rowTag: '전위', x: 20, y: 118, isLibero: false, visible: true },
-                { id: 'h9_fc', team: 'home', name: '전위중', pos: 'FC', zone: 2, rowTag: '전위', x: 50, y: 116, isLibero: false, visible: true },
-                { id: 'h9_fr', team: 'home', name: '전위우', pos: 'FR', zone: 3, rowTag: '전위', x: 80, y: 118, isLibero: false, visible: true },
-
-                { id: 'h9_ml', team: 'home', name: '중위좌', pos: 'ML', zone: 4, rowTag: '중위', x: 22, y: 148, isLibero: false, visible: true },
-                { id: 'h9_s',  team: 'home', name: '세터',   pos: 'S',  zone: 5, rowTag: '중위', x: 50, y: 145, isLibero: false, visible: true },
-                { id: 'h9_mr', team: 'home', name: '중위우', pos: 'MR', zone: 6, rowTag: '중위', x: 78, y: 148, isLibero: false, visible: true },
-
-                { id: 'h9_bl', team: 'home', name: '후위좌', pos: 'BL', zone: 7, rowTag: '후위', x: 20, y: 178, isLibero: false, visible: true },
-                { id: 'h9_bc', team: 'home', name: '후위중', pos: 'BC', zone: 8, rowTag: '후위', x: 50, y: 180, isLibero: false, visible: true },
-                { id: 'h9_br', team: 'home', name: '후위우', pos: 'BR', zone: 9, rowTag: '후위', x: 80, y: 178, isLibero: false, visible: true },
-
-                // 상대 팀 (Away - 9인제 3×3 배치)
-                { id: 'a9_fl', team: 'away', name: '전위좌', pos: 'FL', zone: 1, rowTag: '전위', x: 80, y: 82,  isLibero: false, visible: true },
-                { id: 'a9_fc', team: 'away', name: '전위중', pos: 'FC', zone: 2, rowTag: '전위', x: 50, y: 84,  isLibero: false, visible: true },
-                { id: 'a9_fr', team: 'away', name: '전위우', pos: 'FR', zone: 3, rowTag: '전위', x: 20, y: 82,  isLibero: false, visible: true },
-
-                { id: 'a9_ml', team: 'away', name: '중위좌', pos: 'ML', zone: 4, rowTag: '중위', x: 78, y: 52,  isLibero: false, visible: true },
-                { id: 'a9_s',  team: 'away', name: '세터',   pos: 'S',  zone: 5, rowTag: '중위', x: 50, y: 55,  isLibero: false, visible: true },
-                { id: 'a9_mr', team: 'away', name: '중위우', pos: 'MR', zone: 6, rowTag: '중위', x: 22, y: 52,  isLibero: false, visible: true },
-
-                { id: 'a9_bl', team: 'away', name: '후위좌', pos: 'BL', zone: 7, rowTag: '후위', x: 80, y: 22,  isLibero: false, visible: true },
-                { id: 'a9_bc', team: 'away', name: '후위중', pos: 'BC', zone: 8, rowTag: '후위', x: 50, y: 20,  isLibero: false, visible: true },
-                { id: 'a9_br', team: 'away', name: '후위우', pos: 'BR', zone: 9, rowTag: '후위', x: 20, y: 22,  isLibero: false, visible: true }
-            ];
-        }
-
-        const state = {
-            gameFormat: '6',   // '6' (6인제) | '9' (9인제)
-            courtMode: 'full', // 'full' | 'half'
-            isSwapped: false,  // false: 우리팀 하단, true: 상단
-            showPositions: true,
-            awayVisible: true,
-            currentRotation: 1, // S1 ~ S6 (6인제용)
-            
-            // 드로잉 도구 상태
-            tool: 'move', // 'move' | 'pen' | 'arrow' | 'dashed' | 'line' | 'eraser'
-            color: '#facc15',
-            lineWidth: 3,
-            isDrawing: false,
-            strokes: [],      // 완료된 획 배열
-            redoStack: [],    // 다시 실행 스택
-            currentStroke: null,
-
+// ... existing code ... -->
             // 선수 데이터 (모드 전환 시 각각 보존되도록 캐시 겸용)
             players6Cache: createDefaultPlayers6(),
             players9Cache: createDefaultPlayers9(),
             players: [],
+
+            // 후보 선수(벤치) 데이터 (6인제/9인제 각각 독립 보존)
+            bench6Cache: createDefaultBench6(),
+            bench9Cache: createDefaultBench9(),
+            benchPlayers: [],
+            selectedSubId: null, // 클릭 교체 대기중인 후보 ID
 
             // 배구공 위치 (논리 좌표)
             ball: { x: 50, y: 100 },
@@ -538,27 +562,17 @@
             editingPlayerId: null
         };
         state.players = state.players6Cache;
+        state.benchPlayers = state.bench6Cache;
 
         // DOM 요소 참조
         const stageArea = document.getElementById('stageArea');
+        const courtCenterBox = document.getElementById('courtCenterBox');
         const courtWrapper = document.getElementById('courtWrapper');
-        const courtBgCanvas = document.getElementById('courtBgCanvas');
-        const drawCanvas = document.getElementById('drawCanvas');
-        const tokensLayer = document.getElementById('tokensLayer');
-        const bgCtx = courtBgCanvas.getContext('2d');
-        const drawCtx = drawCanvas.getContext('2d');
-
-        // 코트 여백(프리존) 비율 설정
-        const MARGIN = { x: 18, y: 22 };
-
-        /**
-         * ============================================================================
-         * 2. 초기화, 경기 방식 전환(6인제 vs 9인제) 및 반응형 코트 크기 계산
-         * ============================================================================
-         */
+// ... existing code ... -->
         window.addEventListener('DOMContentLoaded', () => {
             syncFormatUI();
             renderRosterSidebar();
+            renderBenchUI();
             resizeCourt();
             renderTokens();
             setupDrawingEvents();
@@ -568,17 +582,25 @@
         function setGameFormat(format, skipSaveCache = false) {
             if (state.gameFormat === format && !skipSaveCache) return;
 
-            // 현재 모드 선수 위치 캐시 보관
+            // 현재 모드 선수 위치 및 후보 벤치 캐시 보관
             if (!skipSaveCache) {
-                if (state.gameFormat === '6') state.players6Cache = state.players;
-                else state.players9Cache = state.players;
+                if (state.gameFormat === '6') {
+                    state.players6Cache = state.players;
+                    state.bench6Cache = state.benchPlayers;
+                } else {
+                    state.players9Cache = state.players;
+                    state.bench9Cache = state.benchPlayers;
+                }
             }
 
             state.gameFormat = format;
             state.players = format === '6' ? state.players6Cache : state.players9Cache;
+            state.benchPlayers = format === '6' ? state.bench6Cache : state.bench9Cache;
+            state.selectedSubId = null;
 
             syncFormatUI();
             renderRosterSidebar();
+            renderBenchUI();
             resizeCourt();
             renderTokens(true);
             showToast(format === '6' ? '6인제 배구 모드(9m×18m, 어택라인 포함)로 전환되었습니다.' : '9인제 배구 모드(10.5m×21m, 3×3 진형)로 전환되었습니다.');
@@ -603,281 +625,29 @@
             document.getElementById('homeLiberoWrap').style.display = is6 ? 'flex' : 'none';
             document.getElementById('awayLiberoWrap').style.display = is6 ? 'flex' : 'none';
 
+            // 후보 추가 포지션 드롭다운 동기화
+            const subPosSelect = document.getElementById('newSubPos');
+            if (subPosSelect) {
+                const subOpts = is6 ? BENCH_POSITIONS_6 : BENCH_POSITIONS_9;
+                subPosSelect.innerHTML = subOpts.map(code => `<option value="${code}">${code}</option>`).join('');
+            }
+
             // 전술/포메이션 탭 내부 섹션 전환 (6인제 로테이션 vs 9인제 진형 프리셋)
             document.getElementById('rotation6Section').classList.toggle('hidden', !is6);
             document.getElementById('preset6Section').classList.toggle('hidden', !is6);
             document.getElementById('preset9Section').classList.toggle('hidden', is6);
         }
-
-        window.addEventListener('resize', () => {
-            resizeCourt();
-            renderTokens();
-            redrawAllStrokes();
-        });
-
-        // 단축키 지원
-        window.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-                e.preventDefault();
-                undoDraw();
-            } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-                e.preventDefault();
-                redoDraw();
-            } else if (e.key.toLowerCase() === 'v') setTool('move');
-            else if (e.key.toLowerCase() === 'p') setTool('pen');
-            else if (e.key.toLowerCase() === 'a') setTool('arrow');
-            else if (e.key.toLowerCase() === 'd') setTool('dashed');
-            else if (e.key.toLowerCase() === 'l') setTool('line');
-            else if (e.key.toLowerCase() === 'e') setTool('eraser');
-        });
-
+// ... existing code ... -->
         function resizeCourt() {
-            const pad = window.innerWidth < 640 ? 16 : 36;
-            const availW = stageArea.clientWidth - pad;
-            const availH = stageArea.clientHeight - pad;
+            const pad = window.innerWidth < 640 ? 12 : 24;
+            const availW = courtCenterBox.clientWidth - pad;
+            const availH = courtCenterBox.clientHeight - pad;
 
             // 실제 규격 가로/세로 비율 반영
-            // 6인제: 가로 9m × 세로 18m (1 : 2 비율)
-            // 9인제: 가로 10.5m × 세로 21m (코트당 10.5m × 10.5m 정사각형 -> 전체 1 : 2 비율이지만 가로 폭이 더 넓게 표현)
-            const courtWUnits = state.gameFormat === '9' ? 116 : 100;
-            const logicalW = courtWUnits + MARGIN.x * 2;
-            const logicalH = state.courtMode === 'full' 
-                ? (200 + MARGIN.y * 2)
-                : (115 + MARGIN.y * 1.5);
-
-            const targetRatio = logicalW / logicalH;
-            let finalW, finalH;
-
-            if (availW / availH > targetRatio) {
-                finalH = Math.max(260, availH);
-                finalW = finalH * targetRatio;
-            } else {
-                finalW = Math.max(240, availW);
-                finalH = finalW / targetRatio;
-            }
-
-            courtWrapper.style.width = `${Math.floor(finalW)}px`;
-            courtWrapper.style.height = `${Math.floor(finalH)}px`;
-
-            // 고해상도(Retina) 캔버스 스케일링
-            const dpr = window.devicePixelRatio || 1;
-            courtBgCanvas.width = Math.floor(finalW * dpr);
-            courtBgCanvas.height = Math.floor(finalH * dpr);
-            drawCanvas.width = Math.floor(finalW * dpr);
-            drawCanvas.height = Math.floor(finalH * dpr);
-
-            bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            drawCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-            drawCourtBackground(finalW, finalH);
-            redrawAllStrokes();
-        }
-
-        /**
-         * 논리 좌표(lx: 0~100, ly: 0~200) <-> 화면 픽셀 좌표(px, py) 변환
-         */
-        function logicalToPixel(lx, ly) {
-            const w = courtWrapper.clientWidth;
-            const h = courtWrapper.clientHeight;
-
-            let effX = state.isSwapped ? (100 - lx) : lx;
-            let effY = state.isSwapped ? (200 - ly) : ly;
-
-            if (state.courtMode === 'full') {
-                const totalW = 100 + MARGIN.x * 2;
-                const totalH = 200 + MARGIN.y * 2;
-                const px = ((effX + MARGIN.x) / totalW) * w;
-                const py = ((effY + MARGIN.y) / totalH) * h;
-                return { x: px, y: py };
-            } else {
-                // 반 코트 모드 (우리 팀 진영 확대: 네트 위 15단위 ~ 엔드라인 + 여백)
-                const totalW = 100 + MARGIN.x * 2;
-                const startY = 85; // 네트(100)보다 약간 위
-                const totalH = (200 - startY) + MARGIN.y * 1.3;
-                const px = ((effX + MARGIN.x) / totalW) * w;
-                const py = ((effY - startY + MARGIN.y * 0.3) / totalH) * h;
-                return { x: px, y: py };
-            }
-        }
-
-        function pixelToLogical(px, py) {
-            const w = courtWrapper.clientWidth;
-            const h = courtWrapper.clientHeight;
-            let effX, effY;
-
-            if (state.courtMode === 'full') {
-                const totalW = 100 + MARGIN.x * 2;
-                const totalH = 200 + MARGIN.y * 2;
-                effX = (px / w) * totalW - MARGIN.x;
-                effY = (py / h) * totalH - MARGIN.y;
-            } else {
-                const totalW = 100 + MARGIN.x * 2;
-                const startY = 85;
-                const totalH = (200 - startY) + MARGIN.y * 1.3;
-                effX = (px / w) * totalW - MARGIN.x;
-                effY = (py / h) * totalH - MARGIN.y * 0.3 + startY;
-            }
-
-            const lx = state.isSwapped ? (100 - effX) : effX;
-            const ly = state.isSwapped ? (200 - effY) : effY;
-            return { x: lx, y: ly };
-        }
-
-        /**
-         * ============================================================================
-         * 3. 현실감 있는 FIVB 규격 배구 코트 렌더링
-         * ============================================================================
-         */
-        function drawCourtBackground(w, h) {
-            bgCtx.clearRect(0, 0, w, h);
-
-            // 1. 프리존(외곽) 블루 배경
-            const outerGrad = bgCtx.createLinearGradient(0, 0, 0, h);
-            outerGrad.addColorStop(0, '#0284c7');
-            outerGrad.addColorStop(0.5, '#0369a1');
-            outerGrad.addColorStop(1, '#0284c7');
-            bgCtx.fillStyle = outerGrad;
-            bgCtx.fillRect(0, 0, w, h);
-
-            // 코트 모서리 좌표
-            const tl = logicalToPixel(0, 0);
-            const br = logicalToPixel(100, 200);
-            const cLeft = Math.min(tl.x, br.x);
-            const cTop = Math.min(tl.y, br.y);
-            const cWidth = Math.abs(br.x - tl.x);
-            const cHeight = Math.abs(br.y - tl.y);
-
-            // 2. 인코트 오렌지/테라코타 플로어
-            const courtGrad = bgCtx.createLinearGradient(cLeft, cTop, cLeft + cWidth, cTop + cHeight);
-            courtGrad.addColorStop(0, '#f97316');
-            courtGrad.addColorStop(0.5, '#fb923c');
-            courtGrad.addColorStop(1, '#ea580c');
-            bgCtx.fillStyle = courtGrad;
-            bgCtx.fillRect(cLeft, cTop, cWidth, cHeight);
-
-            // 어택 존(프론트 존) 미세한 톤 차이로 입체감 부여
-            const atkTop = logicalToPixel(0, 66.67);
-            const atkBot = logicalToPixel(100, 133.33);
-            bgCtx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-            bgCtx.fillRect(
-                Math.min(atkTop.x, atkBot.x),
-                Math.min(atkTop.y, atkBot.y),
-                Math.abs(atkBot.x - atkTop.x),
-                Math.abs(atkBot.y - atkTop.y)
-            );
-
-            // 3. 코트 외곽선 (사이드라인 & 엔드라인) - 흰색
-            bgCtx.strokeStyle = '#ffffff';
-            bgCtx.lineWidth = 2.5;
-            bgCtx.strokeRect(cLeft, cTop, cWidth, cHeight);
-
-            // 4. 3m 어택 라인 (상단 66.67, 하단 133.33)
-            const a1L = logicalToPixel(0, 66.67);
-            const a1R = logicalToPixel(100, 66.67);
-            const a2L = logicalToPixel(0, 133.33);
-            const a2R = logicalToPixel(100, 133.33);
-
-            bgCtx.beginPath();
-            bgCtx.moveTo(a1L.x, a1L.y);
-            bgCtx.lineTo(a1R.x, a1R.y);
-            bgCtx.moveTo(a2L.x, a2L.y);
-            bgCtx.lineTo(a2R.x, a2R.y);
-            bgCtx.stroke();
-
-            // 어택 라인 연장 점선 (사이드라인 바깥 1.75m)
-            bgCtx.save();
-            bgCtx.setLineDash([4, 4]);
-            bgCtx.lineWidth = 1.8;
-            const ext = (cWidth / 9) * 1.5;
-            bgCtx.beginPath();
-            bgCtx.moveTo(cLeft - ext, a1L.y); bgCtx.lineTo(cLeft, a1L.y);
-            bgCtx.moveTo(cLeft + cWidth, a1R.y); bgCtx.lineTo(cLeft + cWidth + ext, a1R.y);
-            bgCtx.moveTo(cLeft - ext, a2L.y); bgCtx.lineTo(cLeft, a2L.y);
-            bgCtx.moveTo(cLeft + cWidth, a2R.y); bgCtx.lineTo(cLeft + cWidth + ext, a2R.y);
-            bgCtx.stroke();
-            bgCtx.restore();
-
-            // 5. 서브 존 해시마크 (엔드라인 뒤쪽 짧은 선)
-            const sTop1 = logicalToPixel(0, -2);
-            const sTop2 = logicalToPixel(0, -6);
-            const sTop3 = logicalToPixel(100, -2);
-            const sTop4 = logicalToPixel(100, -6);
-            const sBot1 = logicalToPixel(0, 202);
-            const sBot2 = logicalToPixel(0, 206);
-            const sBot3 = logicalToPixel(100, 202);
-            const sBot4 = logicalToPixel(100, 206);
-
-            bgCtx.beginPath();
-            bgCtx.moveTo(sTop1.x, sTop1.y); bgCtx.lineTo(sTop2.x, sTop2.y);
-            bgCtx.moveTo(sTop3.x, sTop3.y); bgCtx.lineTo(sTop4.x, sTop4.y);
-            bgCtx.moveTo(sBot1.x, sBot1.y); bgCtx.lineTo(sBot2.x, sBot2.y);
-            bgCtx.moveTo(sBot3.x, sBot3.y); bgCtx.lineTo(sBot4.x, sBot4.y);
-            bgCtx.stroke();
-
-            // 6. 센터 라인 & 네트(Net) + 안테나
-            const netL = logicalToPixel(0, 100);
-            const netR = logicalToPixel(100, 100);
-
-            // 네트 그림자
-            bgCtx.strokeStyle = 'rgba(15, 23, 42, 0.45)';
-            bgCtx.lineWidth = 7;
-            bgCtx.beginPath();
-            bgCtx.moveTo(netL.x - 8, netL.y + 3);
-            bgCtx.lineTo(netR.x + 8, netR.y + 3);
-            bgCtx.stroke();
-
-            // 네트 본체 (흰색/회색 메쉬 느낌)
-            bgCtx.strokeStyle = '#f8fafc';
-            bgCtx.lineWidth = 4;
-            bgCtx.beginPath();
-            bgCtx.moveTo(netL.x - 10, netL.y);
-            bgCtx.lineTo(netR.x + 10, netR.y);
-            bgCtx.stroke();
-
-            bgCtx.save();
-            bgCtx.strokeStyle = '#334155';
-            bgCtx.lineWidth = 2;
-            bgCtx.setLineDash([4, 4]);
-            bgCtx.beginPath();
-            bgCtx.moveTo(netL.x - 6, netL.y);
-            bgCtx.lineTo(netR.x + 6, netR.y);
-            bgCtx.stroke();
-            bgCtx.restore();
-
-            // 안테나 (빨강/흰색 포인트)
-            [netL, netR].forEach(pt => {
-                bgCtx.fillStyle = '#ef4444';
-                bgCtx.beginPath();
-                bgCtx.arc(pt.x, pt.y, 4.5, 0, Math.PI * 2);
-                bgCtx.fill();
-                bgCtx.strokeStyle = '#ffffff';
-                bgCtx.lineWidth = 1.5;
-                bgCtx.stroke();
-            });
-
-            // 7. 워터마크 텍스트 (은은한 존 번호 가이드)
-            bgCtx.fillStyle = 'rgba(255, 255, 255, 0.14)';
-            bgCtx.font = 'bold 12px Inter, sans-serif';
-            bgCtx.textAlign = 'center';
-            bgCtx.textBaseline = 'middle';
-            const zoneGuides = [
-                { z: '4', x: 18, y: 116 }, { z: '3', x: 50, y: 116 }, { z: '2', x: 82, y: 116 },
-                { z: '5', x: 18, y: 166 }, { z: '6', x: 50, y: 166 }, { z: '1', x: 82, y: 166 }
-            ];
-            zoneGuides.forEach(g => {
-                const p = logicalToPixel(g.x, g.y);
-                bgCtx.fillText(`Z${g.z}`, p.x, p.y);
-            });
-        }
-
-        /**
-         * ============================================================================
-         * 4. 선수 및 배구공 토큰 렌더링 & 드래그 앤 드롭 (등번호 없음, 이름 강조)
-         * ============================================================================
-         */
+// ... existing code ... -->
         function renderTokens(animate = false) {
             tokensLayer.innerHTML = '';
+            const selectedSub = state.benchPlayers.find(b => b.id === state.selectedSubId);
 
             // 1. 선수 토큰 렌더링
             state.players.forEach(player => {
@@ -887,964 +657,382 @@
 
                 const pos = logicalToPixel(player.x, player.y);
                 const el = document.createElement('div');
-                el.className = `player-token pointer-events-auto flex flex-col items-center ${animate ? 'smooth-move' : ''}`;
+                const isEligibleTarget = selectedSub && selectedSub.team === player.team;
+                el.className = `player-token pointer-events-auto flex flex-col items-center ${animate ? 'smooth-move' : ''} ${isEligibleTarget ? 'sub-candidate-pulse cursor-pointer' : ''}`;
                 el.style.left = `${pos.x}px`;
                 el.style.top = `${pos.y}px`;
                 el.dataset.id = player.id;
 
                 // 팀/리베로별 컬러 스타일
-                let circleClass = '';
-                if (player.team === 'home') {
-                    circleClass = player.isLibero
-                        ? 'bg-amber-400 text-slate-950 border-white ring-2 ring-amber-500/50'
-                        : 'bg-blue-600 text-white border-white ring-2 ring-blue-500/50';
-                } else {
-                    circleClass = player.isLibero
-                        ? 'bg-emerald-400 text-slate-950 border-white ring-2 ring-emerald-500/50'
-                        : 'bg-rose-600 text-white border-white ring-2 ring-rose-500/50';
-                }
-
-                // 이름 길이에 따른 폰트 크기 자동 조절
-                const nameLen = player.name.length;
-                const nameFontSize = nameLen <= 2 ? 'text-xs' : (nameLen === 3 ? 'text-[11px]' : 'text-[10px]');
-
-                // 등번호 없이 원형 아이콘 내부에 '이름'을 선명하게 표시 + 상단에 선택적 포지션 뱃지
-                el.innerHTML = `
-                    <div class="relative flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full border-2 shadow-lg font-bold tracking-tight ${circleClass}">
-                        ${state.showPositions ? `<span class="absolute -top-2 -right-1 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-slate-900 text-white border border-slate-600 shadow">${player.pos}</span>` : ''}
-                        <span class="${nameFontSize} leading-tight text-center px-0.5 break-keep drop-shadow-xs">${escapeHtml(player.name)}</span>
-                    </div>
-                `;
-
+// ... existing code ... -->
                 // 드래그 이벤트 바인딩
                 attachDragBehavior(el, (newLx, newLy) => {
                     player.x = Math.max(-14, Math.min(114, newLx));
                     player.y = Math.max(-18, Math.min(218, newLy));
                 });
 
-                // 더블클릭(또는 모바일 더블탭) 이름 수정
-                let lastTap = 0;
-                el.addEventListener('dblclick', (e) => {
-                    e.stopPropagation();
-                    openEditModal(player.id);
-                });
-                el.addEventListener('touchend', (e) => {
-                    const now = Date.now();
-                    if (now - lastTap < 300) {
-                        e.preventDefault();
-                        openEditModal(player.id);
+                // 클릭 교체 대기 상태일 때 코트 선수 클릭 시 즉시 교체 실행
+                el.addEventListener('click', (e) => {
+                    if (state.selectedSubId) {
+                        e.stopPropagation();
+                        executeSubstitution(state.selectedSubId, player.id);
                     }
-                    lastTap = now;
                 });
 
-                tokensLayer.appendChild(el);
-            });
+                // 더블클릭(또는 모바일 더블탭) 이름 수정
+// ... existing code ... -->
+            tokensLayer.appendChild(ballEl);
+        }
 
-            // 2. 배구공 토큰 렌더링
-            const ballPos = logicalToPixel(state.ball.x, state.ball.y);
-            const ballEl = document.createElement('div');
-            ballEl.className = 'ball-token pointer-events-auto';
-            ballEl.style.left = `${ballPos.x}px`;
-            ballEl.style.top = `${ballPos.y}px`;
-            ballEl.title = '배구공 (드래그하여 이동)';
-            ballEl.innerHTML = `
-                <svg class="w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="16" fill="#facc15" stroke="#1e293b" stroke-width="2"/>
-                    <path d="M18 2 A16 16 0 0 1 32 25" fill="none" stroke="#2563eb" stroke-width="4.5"/>
-                    <path d="M4 11 A16 16 0 0 1 28 5" fill="none" stroke="#2563eb" stroke-width="4.5"/>
-                    <path d="M6 28 A16 16 0 0 0 24 33" fill="none" stroke="#2563eb" stroke-width="4.5"/>
-                    <circle cx="18" cy="18" r="16" fill="none" stroke="#0f172a" stroke-width="2"/>
-                </svg>
+        /**
+         * ============================================================================
+         * 4-2. 후보 선수(벤치) 관리 및 선수 교체 (드래그 교체 & 클릭 교체)
+         * ============================================================================
+         */
+        function addBenchPlayer() {
+            const team = document.getElementById('newSubTeam').value;
+            const nameInput = document.getElementById('newSubName');
+            const pos = document.getElementById('newSubPos').value;
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                showToast('후보 선수 이름을 입력해 주세요.');
+                nameInput.focus();
+                return;
+            }
+
+            const newSub = {
+                id: 'sub_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                team,
+                name,
+                pos
+            };
+
+            state.benchPlayers.push(newSub);
+            nameInput.value = '';
+            renderBenchUI();
+            showToast(`${team === 'home' ? '우리팀' : '상대팀'} 후보 '${name}' 선수가 추가되었습니다.`);
+        }
+
+        function updateBenchName(subId, newName) {
+            const sub = state.benchPlayers.find(b => b.id === subId);
+            if (!sub) return;
+            sub.name = newName.trim() || '후보';
+            renderBenchChipsOnly();
+        }
+
+        function updateBenchPos(subId, newPos) {
+            const sub = state.benchPlayers.find(b => b.id === subId);
+            if (!sub) return;
+            sub.pos = newPos;
+            renderBenchChipsOnly();
+        }
+
+        function removeBenchPlayer(subId) {
+            if (state.selectedSubId === subId) state.selectedSubId = null;
+            state.benchPlayers = state.benchPlayers.filter(b => b.id !== subId);
+            if (state.gameFormat === '6') state.bench6Cache = state.benchPlayers;
+            else state.bench9Cache = state.benchPlayers;
+            renderBenchUI();
+            renderTokens();
+            showToast('후보 선수가 목록에서 삭제되었습니다.');
+        }
+
+        function toggleSelectSub(subId) {
+            if (state.selectedSubId === subId) {
+                cancelSubSelection();
+                return;
+            }
+            const sub = state.benchPlayers.find(b => b.id === subId);
+            if (!sub) return;
+
+            if (sub.team === 'away' && (!state.awayVisible || state.courtMode === 'half')) {
+                showToast('현재 화면에 상대팀 코트 선수가 표시되어 있지 않습니다.');
+                return;
+            }
+
+            state.selectedSubId = subId;
+            setTool('move');
+            renderBenchUI();
+            renderTokens();
+            showToast(`'${sub.name}' 선택됨 → 코트 위 ${sub.team === 'home' ? '우리팀' : '상대팀'} 선수를 클릭해 교체하세요.`);
+        }
+
+        function cancelSubSelection() {
+            state.selectedSubId = null;
+            renderBenchUI();
+            renderTokens();
+        }
+
+        function executeSubstitution(subId, courtPlayerId) {
+            const sub = state.benchPlayers.find(b => b.id === subId);
+            const courtPlayer = state.players.find(p => p.id === courtPlayerId);
+            if (!sub || !courtPlayer) return;
+
+            if (sub.team !== courtPlayer.team) {
+                showToast('같은 팀 선수끼리만 교체할 수 있습니다.');
+                return;
+            }
+
+            // 두 선수의 이름과 포지션 맞바꿈 (코트 좌표 및 존은 그대로 유지)
+            const prevCourtName = courtPlayer.name;
+            const prevCourtPos = courtPlayer.pos;
+
+            courtPlayer.name = sub.name;
+            if (sub.pos !== 'SUB') {
+                // 9인제와 6인제 포지션 호환 처리
+                const validCodes = (state.gameFormat === '6' ? POSITIONS_6 : POSITIONS_9).map(o => o.code);
+                if (validCodes.includes(sub.pos)) {
+                    courtPlayer.pos = sub.pos;
+                }
+            }
+
+            sub.name = prevCourtName;
+            sub.pos = prevCourtPos;
+
+            state.selectedSubId = null;
+            renderRosterSidebar();
+            renderBenchUI();
+            renderTokens(true);
+            showToast(`선수 교체 완료: ${courtPlayer.name} (IN) ⇄ ${sub.name} (OUT)`);
+        }
+
+        function renderBenchUI() {
+            renderBenchChipsOnly();
+            renderBenchSidebarList();
+        }
+
+        function renderBenchChipsOnly() {
+            const homeWrap = document.getElementById('homeBenchChips');
+            const awayWrap = document.getElementById('awayBenchChipsList');
+            const awayBox = document.getElementById('awayBenchChips');
+            const cancelBtn = document.getElementById('btnCancelSub');
+            const hintEl = document.getElementById('subStatusHint');
+
+            homeWrap.innerHTML = '';
+            awayWrap.innerHTML = '';
+
+            // 반 코트거나 상대팀 숨김일 때 상대 벤치 흐리게 처리
+            const awayDisabled = !state.awayVisible || state.courtMode === 'half';
+            awayBox.classList.toggle('opacity-45', awayDisabled);
+
+            const selectedSub = state.benchPlayers.find(b => b.id === state.selectedSubId);
+            if (selectedSub) {
+                cancelBtn.classList.remove('hidden');
+                hintEl.innerHTML = `<strong class="text-amber-300">[${escapeHtml(selectedSub.name)}] 교체 대기중</strong> · 코트 위 ${selectedSub.team === 'home' ? '우리팀' : '상대팀'} 선수를 클릭하세요`;
+                hintEl.classList.remove('hidden');
+            } else {
+                cancelBtn.classList.add('hidden');
+                hintEl.textContent = '· 후보 칩을 코트 위 같은 팀 선수에게 드래그하거나 클릭 후 코트 선수를 클릭해 교체';
+            }
+
+            const homeSubs = state.benchPlayers.filter(b => b.team === 'home');
+            const awaySubs = state.benchPlayers.filter(b => b.team === 'away');
+
+            if (homeSubs.length === 0) {
+                homeWrap.innerHTML = `<span class="text-[11px] text-slate-500">대기 후보 없음</span>`;
+            } else {
+                homeSubs.forEach(sub => homeWrap.appendChild(createBenchChipElement(sub)));
+            }
+
+            if (awaySubs.length === 0) {
+                awayWrap.innerHTML = `<span class="text-[11px] text-slate-500">대기 후보 없음</span>`;
+            } else {
+                awaySubs.forEach(sub => awayWrap.appendChild(createBenchChipElement(sub)));
+            }
+        }
+
+        function createBenchChipElement(sub) {
+            const isSelected = state.selectedSubId === sub.id;
+            const chip = document.createElement('div');
+            const baseColor = sub.team === 'home'
+                ? 'bg-blue-600/90 hover:bg-blue-500 border-blue-300/60 text-white'
+                : 'bg-rose-600/90 hover:bg-rose-500 border-rose-300/60 text-white';
+
+            chip.className = `inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-bold cursor-grab active:cursor-grabbing shadow-sm transition select-none ${baseColor} ${isSelected ? 'ring-2 ring-amber-300 scale-105 bg-amber-500 text-slate-950 border-white' : ''}`;
+            chip.title = '클릭하여 교체 선택 또는 코트 선수 위로 드래그하여 교체';
+            chip.innerHTML = `
+                <span class="px-1 rounded bg-black/30 text-[9px] font-black">${escapeHtml(sub.pos)}</span>
+                <span>${escapeHtml(sub.name)}</span>
             `;
 
-            attachDragBehavior(ballEl, (newLx, newLy) => {
-                state.ball.x = Math.max(-15, Math.min(115, newLx));
-                state.ball.y = Math.max(-20, Math.min(220, newLy));
+            // 클릭 시 교체 대기 토글
+            chip.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleSelectSub(sub.id);
             });
 
-            tokensLayer.appendChild(ballEl);
+            // 드래그 앤 드롭으로 코트 위 같은 팀 선수와 즉시 교체 (마우스 & 터치 지원)
+            attachBenchChipDrag(chip, sub);
+
+            return chip;
+        }
+
+        function attachBenchChipDrag(chipEl, sub) {
+            let ghost = null;
+            let hasMoved = false;
+            let hoveredPlayerId = null;
+
+            const findTargetPlayerAt = (clientX, clientY) => {
+                const tokens = tokensLayer.querySelectorAll('.player-token');
+                let foundId = null;
+                tokens.forEach(tok => {
+                    tok.classList.remove('sub-target-highlight');
+                    const pid = tok.dataset.id;
+                    const pObj = state.players.find(p => p.id === pid);
+                    if (!pObj || pObj.team !== sub.team) return;
+
+                    const rect = tok.getBoundingClientRect();
+                    const cx = rect.left + rect.width / 2;
+                    const cy = rect.top + rect.height / 2;
+                    if (Math.hypot(clientX - cx, clientY - cy) <= 34) {
+                        foundId = pid;
+                        tok.classList.add('sub-target-highlight');
+                    }
+                });
+                return foundId;
+            };
+
+            const startDrag = (clientX, clientY) => {
+                hasMoved = false;
+                hoveredPlayerId = null;
+            };
+
+            const moveDrag = (clientX, clientY) => {
+                if (!hasMoved) {
+                    hasMoved = true;
+                    ghost = document.createElement('div');
+                    ghost.className = `fixed pointer-events-none z-50 px-3 py-1.5 rounded-full text-xs font-black text-white shadow-2xl border-2 border-amber-300 -translate-x-1/2 -translate-y-1/2 ${sub.team === 'home' ? 'bg-blue-600' : 'bg-rose-600'}`;
+                    ghost.textContent = `⇄ ${sub.name} (${sub.pos})`;
+                    document.body.appendChild(ghost);
+                }
+                if (ghost) {
+                    ghost.style.left = `${clientX}px`;
+                    ghost.style.top = `${clientY}px`;
+                }
+                hoveredPlayerId = findTargetPlayerAt(clientX, clientY);
+            };
+
+            const endDrag = () => {
+                if (ghost) {
+                    ghost.remove();
+                    ghost = null;
+                }
+                tokensLayer.querySelectorAll('.player-token').forEach(t => t.classList.remove('sub-target-highlight'));
+                if (hasMoved && hoveredPlayerId) {
+                    executeSubstitution(sub.id, hoveredPlayerId);
+                }
+            };
+
+            chipEl.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                const startX = e.clientX;
+                const startY = e.clientY;
+                startDrag(startX, startY);
+
+                const onMouseMove = (ev) => {
+                    if (!hasMoved && Math.hypot(ev.clientX - startX, ev.clientY - startY) < 6) return;
+                    moveDrag(ev.clientX, ev.clientY);
+                };
+                const onMouseUp = () => {
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                    endDrag();
+                };
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
+            });
+
+            chipEl.addEventListener('touchstart', (e) => {
+                const t = e.touches[0];
+                chipEl._startX = t.clientX;
+                chipEl._startY = t.clientY;
+                startDrag(t.clientX, t.clientY);
+            }, { passive: true });
+
+            chipEl.addEventListener('touchmove', (e) => {
+                const t = e.touches[0];
+                if (!hasMoved && Math.hypot(t.clientX - chipEl._startX, t.clientY - chipEl._startY) < 8) return;
+                e.preventDefault();
+                moveDrag(t.clientX, t.clientY);
+            }, { passive: false });
+
+            chipEl.addEventListener('touchend', () => {
+                endDrag();
+            });
+        }
+
+        function renderBenchSidebarList() {
+            const listEl = document.getElementById('benchRosterList');
+            const countBadge = document.getElementById('benchCountBadge');
+            if (!listEl) return;
+
+            countBadge.textContent = `${state.benchPlayers.length}명 대기중`;
+            listEl.innerHTML = '';
+
+            if (state.benchPlayers.length === 0) {
+                listEl.innerHTML = `<div class="text-center py-3 text-[11px] text-slate-500">등록된 후보 선수가 없습니다.</div>`;
+                return;
+            }
+
+            const posOpts = state.gameFormat === '6' ? BENCH_POSITIONS_6 : BENCH_POSITIONS_9;
+
+            state.benchPlayers.forEach(sub => {
+                const row = document.createElement('div');
+                const isSelected = state.selectedSubId === sub.id;
+                row.className = `flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border ${isSelected ? 'border-amber-400 ring-1 ring-amber-400/50' : 'border-slate-700/70'}`;
+
+                const teamTag = sub.team === 'home'
+                    ? `<span class="px-1.5 h-6 rounded bg-blue-600 text-white text-[10px] font-black flex items-center justify-center shrink-0">우리</span>`
+                    : `<span class="px-1.5 h-6 rounded bg-rose-600 text-white text-[10px] font-black flex items-center justify-center shrink-0">상대</span>`;
+
+                const optionsHtml = posOpts.map(code =>
+                    `<option value="${code}" ${sub.pos === code ? 'selected' : ''}>${code}</option>`
+                ).join('');
+
+                row.innerHTML = `
+                    ${teamTag}
+                    <input type="text" value="${escapeHtml(sub.name)}" maxlength="8"
+                        oninput="updateBenchName('${sub.id}', this.value)"
+                        class="flex-1 min-w-0 bg-slate-800 border border-slate-700 focus:border-amber-400 rounded px-2 py-1 text-xs text-white font-medium focus:outline-none">
+                    <select onchange="updateBenchPos('${sub.id}', this.value)"
+                        class="bg-slate-800 border border-slate-700 rounded px-1 py-1 text-[11px] font-bold text-slate-200 focus:outline-none">
+                        ${optionsHtml}
+                    </select>
+                    <button onclick="toggleSelectSub('${sub.id}')" title="코트 선수와 교체하기"
+                        class="px-2 py-1 rounded text-[11px] font-bold shrink-0 transition ${isSelected ? 'bg-amber-400 text-slate-950' : 'bg-slate-700 hover:bg-amber-500 hover:text-slate-950 text-amber-300'}">
+                        교체 ⇄
+                    </button>
+                    <button onclick="removeBenchPlayer('${sub.id}')" title="후보 삭제"
+                        class="px-1.5 py-1 rounded bg-slate-800 hover:bg-rose-600 text-slate-400 hover:text-white text-[11px] shrink-0 transition">
+                        ✕
+                    </button>
+                `;
+                listEl.appendChild(row);
+            });
         }
 
         function attachDragBehavior(element, onUpdateLogical) {
             let isDragging = false;
-
-            const onStart = (clientX, clientY) => {
-                if (state.tool !== 'move') return;
-                isDragging = true;
-                element.classList.remove('smooth-move');
-            };
-
-            const onMove = (clientX, clientY) => {
-                if (!isDragging) return;
-                const rect = courtWrapper.getBoundingClientRect();
-                const px = clientX - rect.left;
-                const py = clientY - rect.top;
-                const logical = pixelToLogical(px, py);
-                onUpdateLogical(logical.x, logical.y);
-
-                const clampedPx = logicalToPixel(
-                    Math.max(-14, Math.min(114, logical.x)),
-                    Math.max(-18, Math.min(218, logical.y))
-                );
-                element.style.left = `${clampedPx.x}px`;
-                element.style.top = `${clampedPx.y}px`;
-            };
-
-            const onEnd = () => {
-                isDragging = false;
-            };
-
-            element.addEventListener('mousedown', (e) => {
-                if (state.tool !== 'move') return;
-                e.stopPropagation();
-                onStart(e.clientX, e.clientY);
-                const moveHandler = (ev) => onMove(ev.clientX, ev.clientY);
-                const upHandler = () => {
-                    onEnd();
-                    window.removeEventListener('mousemove', moveHandler);
-                    window.removeEventListener('mouseup', upHandler);
-                };
-                window.addEventListener('mousemove', moveHandler);
-                window.addEventListener('mouseup', upHandler);
-            });
-
-            element.addEventListener('touchstart', (e) => {
-                if (state.tool !== 'move') return;
-                e.stopPropagation();
-                const t = e.touches[0];
-                onStart(t.clientX, t.clientY);
-            }, { passive: true });
-
-            element.addEventListener('touchmove', (e) => {
-                if (!isDragging) return;
-                e.preventDefault();
-                const t = e.touches[0];
-                onMove(t.clientX, t.clientY);
-            }, { passive: false });
-
-            element.addEventListener('touchend', onEnd);
-        }
-
-        /**
-         * ============================================================================
-         * 3. 현실감 있는 배구 코트 렌더링 (6인제 FIVB 규격 vs 9인제 규격 자동 분기)
-         * ============================================================================
-         */
-        function drawCourtBackground(w, h) {
-            bgCtx.clearRect(0, 0, w, h);
-            const is9 = state.gameFormat === '9';
-
-            // 1. 프리존(외곽) 배경 (6인제: 오션 블루, 9인제: 딥 에메랄드/틸 블루로 구분감 부여)
-            const outerGrad = bgCtx.createLinearGradient(0, 0, 0, h);
-            if (is9) {
-                outerGrad.addColorStop(0, '#0d9488');
-                outerGrad.addColorStop(0.5, '#0f766e');
-                outerGrad.addColorStop(1, '#0d9488');
-            } else {
-                outerGrad.addColorStop(0, '#0284c7');
-                outerGrad.addColorStop(0.5, '#0369a1');
-                outerGrad.addColorStop(1, '#0284c7');
-            }
-            bgCtx.fillStyle = outerGrad;
-            bgCtx.fillRect(0, 0, w, h);
-
-            // 코트 모서리 좌표
-            const tl = logicalToPixel(0, 0);
-            const br = logicalToPixel(100, 200);
-            const cLeft = Math.min(tl.x, br.x);
-            const cTop = Math.min(tl.y, br.y);
-            const cWidth = Math.abs(br.x - tl.x);
-            const cHeight = Math.abs(br.y - tl.y);
-
-            // 2. 인코트 플로어
-            const courtGrad = bgCtx.createLinearGradient(cLeft, cTop, cLeft + cWidth, cTop + cHeight);
-            courtGrad.addColorStop(0, '#f97316');
-            courtGrad.addColorStop(0.5, '#fb923c');
-            courtGrad.addColorStop(1, '#ea580c');
-            bgCtx.fillStyle = courtGrad;
-            bgCtx.fillRect(cLeft, cTop, cWidth, cHeight);
-
-            // 6인제 전용: 어택 존(프론트 존) 음영 및 3m 어택 라인
-            if (!is9) {
-                const atkTop = logicalToPixel(0, 66.67);
-                const atkBot = logicalToPixel(100, 133.33);
-                bgCtx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-                bgCtx.fillRect(
-                    Math.min(atkTop.x, atkBot.x),
-                    Math.min(atkTop.y, atkBot.y),
-                    Math.abs(atkBot.x - atkTop.x),
-                    Math.abs(atkBot.y - atkTop.y)
-                );
-            }
-
-            // 3. 코트 외곽선 (사이드라인 & 엔드라인) - 흰색
-            bgCtx.strokeStyle = '#ffffff';
-            bgCtx.lineWidth = 2.5;
-            bgCtx.strokeRect(cLeft, cTop, cWidth, cHeight);
-
-            // 4. 6인제 전용 3m 어택 라인 및 연장 점선 (9인제는 어택 라인 없음)
-            if (!is9) {
-                const a1L = logicalToPixel(0, 66.67);
-                const a1R = logicalToPixel(100, 66.67);
-                const a2L = logicalToPixel(0, 133.33);
-                const a2R = logicalToPixel(100, 133.33);
-
-                bgCtx.beginPath();
-                bgCtx.moveTo(a1L.x, a1L.y);
-                bgCtx.lineTo(a1R.x, a1R.y);
-                bgCtx.moveTo(a2L.x, a2L.y);
-                bgCtx.lineTo(a2R.x, a2R.y);
-                bgCtx.stroke();
-
-                // 어택 라인 연장 점선 (사이드라인 바깥 1.75m)
-                bgCtx.save();
-                bgCtx.setLineDash([4, 4]);
-                bgCtx.lineWidth = 1.8;
-                const ext = (cWidth / 9) * 1.5;
-                bgCtx.beginPath();
-                bgCtx.moveTo(cLeft - ext, a1L.y); bgCtx.lineTo(cLeft, a1L.y);
-                bgCtx.moveTo(cLeft + cWidth, a1R.y); bgCtx.lineTo(cLeft + cWidth + ext, a1R.y);
-                bgCtx.moveTo(cLeft - ext, a2L.y); bgCtx.lineTo(cLeft, a2L.y);
-                bgCtx.moveTo(cLeft + cWidth, a2R.y); bgCtx.lineTo(cLeft + cWidth + ext, a2R.y);
-                bgCtx.stroke();
-                bgCtx.restore();
-            } else {
-                // 9인제 전용: 전위·중위·후위 구역 참조용 아주 은은한 가이드 점선
-                bgCtx.save();
-                bgCtx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
-                bgCtx.setLineDash([3, 5]);
-                bgCtx.lineWidth = 1;
-                [33.33, 66.67, 133.33, 166.67].forEach(gy => {
-                    const gl = logicalToPixel(0, gy);
-                    const gr = logicalToPixel(100, gy);
-                    bgCtx.beginPath();
-                    bgCtx.moveTo(gl.x, gl.y);
-                    bgCtx.lineTo(gr.x, gr.y);
-                    bgCtx.stroke();
-                });
-                bgCtx.restore();
-            }
-
-            // 5. 서브 존 해시마크 (엔드라인 뒤쪽 짧은 선)
-            const sTop1 = logicalToPixel(0, -2);
-            const sTop2 = logicalToPixel(0, -6);
-            const sTop3 = logicalToPixel(100, -2);
-            const sTop4 = logicalToPixel(100, -6);
-            const sBot1 = logicalToPixel(0, 202);
-            const sBot2 = logicalToPixel(0, 206);
-            const sBot3 = logicalToPixel(100, 202);
-            const sBot4 = logicalToPixel(100, 206);
-
-            bgCtx.beginPath();
-            bgCtx.moveTo(sTop1.x, sTop1.y); bgCtx.lineTo(sTop2.x, sTop2.y);
-            bgCtx.moveTo(sTop3.x, sTop3.y); bgCtx.lineTo(sTop4.x, sTop4.y);
-            bgCtx.moveTo(sBot1.x, sBot1.y); bgCtx.lineTo(sBot2.x, sBot2.y);
-            bgCtx.moveTo(sBot3.x, sBot3.y); bgCtx.lineTo(sBot4.x, sBot4.y);
-            bgCtx.stroke();
-
-            // 6. 센터 라인 & 네트(Net) + 안테나
-            const netL = logicalToPixel(0, 100);
-            const netR = logicalToPixel(100, 100);
-
-            // 네트 그림자
-            bgCtx.strokeStyle = 'rgba(15, 23, 42, 0.45)';
-            bgCtx.lineWidth = 7;
-            bgCtx.beginPath();
-            bgCtx.moveTo(netL.x - 8, netL.y + 3);
-            bgCtx.lineTo(netR.x + 8, netR.y + 3);
-            bgCtx.stroke();
-
-            // 네트 본체
-            bgCtx.strokeStyle = '#f8fafc';
-            bgCtx.lineWidth = 4;
-            bgCtx.beginPath();
-            bgCtx.moveTo(netL.x - 10, netL.y);
-            bgCtx.lineTo(netR.x + 10, netR.y);
-            bgCtx.stroke();
-
-            bgCtx.save();
-            bgCtx.strokeStyle = '#334155';
-            bgCtx.lineWidth = 2;
-            bgCtx.setLineDash([4, 4]);
-            bgCtx.beginPath();
-            bgCtx.moveTo(netL.x - 6, netL.y);
-            bgCtx.lineTo(netR.x + 6, netR.y);
-            bgCtx.stroke();
-            bgCtx.restore();
-
-            // 안테나 (빨강/흰색 포인트)
-            [netL, netR].forEach(pt => {
-                bgCtx.fillStyle = '#ef4444';
-                bgCtx.beginPath();
-                bgCtx.arc(pt.x, pt.y, 4.5, 0, Math.PI * 2);
-                bgCtx.fill();
-                bgCtx.strokeStyle = '#ffffff';
-                bgCtx.lineWidth = 1.5;
-                bgCtx.stroke();
-            });
-
-            // 7. 워터마크 텍스트 (6인제: Z1~Z6 / 9인제: 전위·중위·후위 가이드)
-            bgCtx.fillStyle = 'rgba(255, 255, 255, 0.16)';
-            bgCtx.font = 'bold 12px "Noto Sans KR", Inter, sans-serif';
-            bgCtx.textAlign = 'center';
-            bgCtx.textBaseline = 'middle';
-
-            if (!is9) {
-                const zoneGuides = [
-                    { z: 'Z4', x: 18, y: 116 }, { z: 'Z3', x: 50, y: 116 }, { z: 'Z2', x: 82, y: 116 },
-                    { z: 'Z5', x: 18, y: 166 }, { z: 'Z6', x: 50, y: 166 }, { z: 'Z1', x: 82, y: 166 }
-                ];
-                zoneGuides.forEach(g => {
-                    const p = logicalToPixel(g.x, g.y);
-                    bgCtx.fillText(g.z, p.x, p.y);
-                });
-            } else {
-                const rowGuides = [
-                    { label: '전 위 (Front)', x: 50, y: 116 },
-                    { label: '중 위 (Middle)', x: 50, y: 150 },
-                    { label: '후 위 (Back)', x: 50, y: 184 }
-                ];
-                rowGuides.forEach(g => {
-                    const p = logicalToPixel(g.x, g.y);
-                    bgCtx.fillText(g.label, p.x, p.y);
-                });
-            }
-        }
-
-        function setTool(toolName) {
-            state.tool = toolName;
-            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-            const activeBtn = document.getElementById(`tool-${toolName}`);
-            if (activeBtn) activeBtn.classList.add('active');
-
-            // 이동 모드일 때는 선수 토큰 클릭이 우선, 드로잉 모드일 때는 캔버스가 입력을 받음
-            drawCanvas.style.pointerEvents = toolName === 'move' ? 'none' : 'auto';
-            drawCanvas.style.cursor = toolName === 'move' ? 'default' : (toolName === 'eraser' ? 'cell' : 'crosshair');
-        }
-
-        function setColor(hex) {
-            state.color = hex;
-            document.querySelectorAll('.color-btn').forEach(btn => {
-                if (btn.dataset.color === hex) {
-                    btn.classList.add('ring-2', 'ring-offset-2', 'ring-offset-slate-900', 'ring-white');
-                } else {
-                    btn.classList.remove('ring-2', 'ring-offset-2', 'ring-offset-slate-900', 'ring-white');
-                }
-            });
-            if (state.tool === 'move' || state.tool === 'eraser') setTool('pen');
-        }
-
-        function setLineWidth(width) {
-            state.lineWidth = width;
-            document.getElementById('width-3').className = width === 3
-                ? 'width-btn px-2 py-1 rounded bg-blue-600 text-[11px] font-bold text-white'
-                : 'width-btn px-2 py-1 rounded bg-slate-800 text-[11px] font-bold text-slate-400';
-            document.getElementById('width-6').className = width === 6
-                ? 'width-btn px-2 py-1 rounded bg-blue-600 text-[11px] font-bold text-white'
-                : 'width-btn px-2 py-1 rounded bg-slate-800 text-[11px] font-bold text-slate-400';
-        }
-
-        function setupDrawingEvents() {
-            // 초기에는 이동 모드이므로 pointer-events: none
-            drawCanvas.style.pointerEvents = 'none';
-
-            const getLogicalPos = (clientX, clientY) => {
-                const rect = drawCanvas.getBoundingClientRect();
-                return pixelToLogical(clientX - rect.left, clientY - rect.top);
-            };
-
-            const startStroke = (clientX, clientY) => {
-                if (state.tool === 'move') return;
-                const pt = getLogicalPos(clientX, clientY);
-
-                if (state.tool === 'eraser') {
-                    eraseAt(pt);
-                    state.isDrawing = true;
-                    return;
-                }
-
-                state.isDrawing = true;
-                state.currentStroke = {
-                    type: state.tool,
-                    color: state.color,
-                    width: state.lineWidth,
-                    points: [pt]
-                };
-            };
-
-            const moveStroke = (clientX, clientY) => {
-                if (!state.isDrawing) return;
-                const pt = getLogicalPos(clientX, clientY);
-
-                if (state.tool === 'eraser') {
-                    eraseAt(pt);
-                    return;
-                }
-
-                if (!state.currentStroke) return;
-                if (state.currentStroke.type === 'pen') {
-                    state.currentStroke.points.push(pt);
-                } else {
-                    // 직선/화살표/점선은 시작점과 끝점만 유지
-                    state.currentStroke.points[1] = pt;
-                }
-                redrawAllStrokes();
-                renderStroke(drawCtx, state.currentStroke);
-            };
-
-            const endStroke = () => {
-                if (!state.isDrawing) return;
-                state.isDrawing = false;
-                if (state.currentStroke && state.currentStroke.points.length > 1) {
-                    state.strokes.push(state.currentStroke);
-                    state.redoStack = [];
-                }
-                state.currentStroke = null;
-                redrawAllStrokes();
-            };
-
-            drawCanvas.addEventListener('mousedown', e => startStroke(e.clientX, e.clientY));
-            window.addEventListener('mousemove', e => moveStroke(e.clientX, e.clientY));
-            window.addEventListener('mouseup', endStroke);
-
-            drawCanvas.addEventListener('touchstart', e => {
-                e.preventDefault();
-                const t = e.touches[0];
-                startStroke(t.clientX, t.clientY);
-            }, { passive: false });
-
-            drawCanvas.addEventListener('touchmove', e => {
-                if (!state.isDrawing) return;
-                e.preventDefault();
-                const t = e.touches[0];
-                moveStroke(t.clientX, t.clientY);
-            }, { passive: false });
-
-            drawCanvas.addEventListener('touchend', endStroke);
-        }
-
-        function eraseAt(logicalPt) {
-            const threshold = 8; // 논리 거리 기준
-            const beforeLen = state.strokes.length;
-            state.strokes = state.strokes.filter(stroke => {
-                return !stroke.points.some(p => Math.hypot(p.x - logicalPt.x, p.y - logicalPt.y) < threshold);
-            });
-            if (state.strokes.length !== beforeLen) {
-                redrawAllStrokes();
-            }
-        }
-
-        function redrawAllStrokes() {
-            const w = courtWrapper.clientWidth;
-            const h = courtWrapper.clientHeight;
-            drawCtx.clearRect(0, 0, w, h);
-            state.strokes.forEach(stroke => renderStroke(drawCtx, stroke));
-        }
-
-        function renderStroke(ctx, stroke) {
-            if (!stroke || stroke.points.length < 2) return;
-            const pts = stroke.points.map(p => logicalToPixel(p.x, p.y));
-
-            ctx.save();
-            ctx.strokeStyle = stroke.color;
-            ctx.fillStyle = stroke.color;
-            ctx.lineWidth = stroke.width;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-
-            if (stroke.type === 'dashed') {
-                ctx.setLineDash([8, 6]);
-            }
-
-            ctx.beginPath();
-            ctx.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < pts.length; i++) {
-                ctx.lineTo(pts[i].x, pts[i].y);
-            }
-            ctx.stroke();
-
-            // 화살표 머리 그리기 (arrow 또는 dashed)
-            if (stroke.type === 'arrow' || stroke.type === 'dashed') {
-                ctx.setLineDash([]);
-                const start = pts[0];
-                const end = pts[pts.length - 1];
-                const angle = Math.atan2(end.y - start.y, end.x - start.x);
-                const headLen = 10 + stroke.width * 1.4;
-
-                ctx.beginPath();
-                ctx.moveTo(end.x, end.y);
-                ctx.lineTo(end.x - headLen * Math.cos(angle - Math.PI / 6), end.y - headLen * Math.sin(angle - Math.PI / 6));
-                ctx.lineTo(end.x - headLen * Math.cos(angle + Math.PI / 6), end.y - headLen * Math.sin(angle + Math.PI / 6));
-                ctx.closePath();
-                ctx.fill();
-            }
-
-            ctx.restore();
-        }
-
-        function undoDraw() {
-            if (state.strokes.length === 0) return;
-            state.redoStack.push(state.strokes.pop());
-            redrawAllStrokes();
-        }
-
-        function redoDraw() {
-            if (state.redoStack.length === 0) return;
-            state.strokes.push(state.redoStack.pop());
-            redrawAllStrokes();
-        }
-
-        function clearCanvas() {
-            state.strokes = [];
-            state.redoStack = [];
-            redrawAllStrokes();
-            showToast('작전판 드로잉이 초기화되었습니다.');
-        }
-
-        /**
-         * ============================================================================
-         * 6. 우측 사이드바: 선수 이름 & 포지션 명단 관리 (등번호 없음, 6인제/9인제 동적)
-         * ============================================================================
-         */
-        function renderRosterSidebar() {
-            const homeContainer = document.getElementById('homeRosterList');
-            const awayContainer = document.getElementById('awayRosterList');
-            homeContainer.innerHTML = '';
-            awayContainer.innerHTML = '';
-
-            const posOptions = state.gameFormat === '6' ? POSITIONS_6 : POSITIONS_9;
-
-            state.players.forEach(p => {
-                const row = document.createElement('div');
-                row.className = 'flex items-center gap-1.5 bg-slate-900/80 p-1.5 rounded-lg border border-slate-700/60';
-
-                const badgeColor = p.isLibero
-                    ? (p.team === 'home' ? 'bg-amber-400 text-slate-950' : 'bg-emerald-400 text-slate-950')
-                    : (p.team === 'home' ? 'bg-blue-600 text-white' : 'bg-rose-600 text-white');
-
-                const tagLabel = state.gameFormat === '6'
-                    ? (p.isLibero ? 'L' : `Z${p.zone}`)
-                    : (p.rowTag || '선수');
-
-                const optionsHtml = posOptions.map(opt =>
-                    `<option value="${opt.code}" ${p.pos === opt.code ? 'selected' : ''}>${opt.code}</option>`
-                ).join('');
-
-                row.innerHTML = `
-                    <span class="px-1.5 h-6 rounded-md ${badgeColor} text-[10px] font-black flex items-center justify-center shrink-0">
-                        ${tagLabel}
-                    </span>
-                    <input type="text" value="${escapeHtml(p.name)}" maxlength="8"
-                        onchange="updatePlayerName('${p.id}', this.value)"
-                        oninput="updatePlayerName('${p.id}', this.value)"
-                        class="flex-1 min-w-0 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded px-2 py-1 text-xs text-white font-medium focus:outline-none"
-                        placeholder="선수 이름">
-                    <select onchange="updatePlayerPos('${p.id}', this.value)"
-                        title="포지션 선택"
-                        class="bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] font-bold text-slate-200 focus:outline-none">
-                        ${optionsHtml}
-                    </select>
-                `;
-
-                if (p.team === 'home') homeContainer.appendChild(row);
-                else awayContainer.appendChild(row);
-            });
-        }
-
-        function updatePlayerName(id, newName) {
-            const p = state.players.find(item => item.id === id);
-            if (!p) return;
-            p.name = newName.trim() || '선수';
-            renderTokens();
-        }
-
-        function updatePlayerPos(id, newPos) {
-            const p = state.players.find(item => item.id === id);
-            if (!p) return;
-            p.pos = newPos;
-            renderTokens();
-        }
-
-        function toggleLibero(team, isVisible) {
-            const libero = state.players.find(p => p.team === team && p.isLibero);
-            if (libero) {
-                libero.visible = isVisible;
-                renderTokens();
-            }
-        }
-
-        function toggleAwayTeam(isVisible) {
-            state.awayVisible = isVisible;
-            renderTokens();
-        }
-
-        function togglePositionTags() {
-            state.showPositions = !state.showPositions;
-            const btn = document.getElementById('btnTogglePos');
-            btn.querySelector('span').textContent = `포지션: ${state.showPositions ? 'ON' : 'OFF'}`;
-            btn.classList.toggle('text-emerald-400', state.showPositions);
-            btn.classList.toggle('text-slate-400', !state.showPositions);
-            renderTokens();
-        }
-
-        // 더블클릭 빠른 수정 모달
-        function openEditModal(playerId) {
-            const p = state.players.find(item => item.id === playerId);
-            if (!p) return;
-            state.editingPlayerId = playerId;
-            document.getElementById('modalPlayerName').value = p.name;
-
-            const posSelect = document.getElementById('modalPlayerPos');
-            const posList = state.gameFormat === '6' ? POSITIONS_6 : POSITIONS_9;
-            posSelect.innerHTML = posList.map(opt =>
-                `<option value="${opt.code}" ${p.pos === opt.code ? 'selected' : ''}>${opt.label}</option>`
-            ).join('');
-
-            const modal = document.getElementById('editNameModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            setTimeout(() => document.getElementById('modalPlayerName').focus(), 50);
-        }
-
-        function closeEditModal() {
-            const modal = document.getElementById('editNameModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            state.editingPlayerId = null;
-        }
-
-        function savePlayerModal() {
-            if (!state.editingPlayerId) return;
-            const nameVal = document.getElementById('modalPlayerName').value;
-            const posVal = document.getElementById('modalPlayerPos').value;
-            updatePlayerName(state.editingPlayerId, nameVal);
-            updatePlayerPos(state.editingPlayerId, posVal);
-            renderRosterSidebar();
-            closeEditModal();
-        }
-
-        document.getElementById('modalPlayerName').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') savePlayerModal();
-            if (e.key === 'Escape') closeEditModal();
-        });
-
-        /**
-         * ============================================================================
-         * 7. 로테이션 (S1~S6) 및 포메이션 프리셋
-         * ============================================================================
-         */
-        // 존별 기본 좌표 (우리 팀 하단 기준)
-        const ZONE_COORDS = {
-            1: { x: 80, y: 168 }, // 후위 우측
-            2: { x: 80, y: 122 }, // 전위 우측
-            3: { x: 50, y: 118 }, // 전위 중앙
-            4: { x: 20, y: 122 }, // 전위 좌측
-            5: { x: 20, y: 168 }, // 후위 좌측
-            6: { x: 50, y: 175 }  // 후위 중앙
-        };
-
-        // 세터(h1)의 목표 존에 맞춰 6명의 존을 자동 계산
-        function applyRotation(setterTargetZone) {
-            state.currentRotation = setterTargetZone;
-            document.getElementById('currentRotationBadge').textContent = `S${setterTargetZone} (${setterTargetZone}번 자리)`;
-
-            const homePlayers = state.players.filter(p => p.team === 'home' && !p.isLibero);
-            const setter = homePlayers.find(p => p.id === 'h1');
-            const shift = (setterTargetZone - setter.zone + 6) % 6;
-
-            homePlayers.forEach(p => {
-                const newZone = ((p.zone - 1 + shift) % 6) + 1;
-                p.zone = newZone;
-                p.x = ZONE_COORDS[newZone].x;
-                p.y = ZONE_COORDS[newZone].y;
-            });
-
-            renderRosterSidebar();
-            renderTokens(true);
-            showToast(`S${setterTargetZone} 로테이션 기본 위치로 정렬되었습니다.`);
-        }
-
-        function rotateClockwise() {
-            // 배구 로테이션은 시계방향 이동 (2->1, 1->6, 6->5, 5->4, 4->3, 3->2)
-            const nextMap = { 2: 1, 1: 6, 6: 5, 5: 4, 4: 3, 3: 2 };
-            const setter = state.players.find(p => p.id === 'h1');
-            const nextSetterZone = nextMap[setter.zone] || 1;
-            applyRotation(nextSetterZone);
-        }
-
-        function applyFormationPreset(type) {
-            const home = state.players.filter(p => p.team === 'home');
-            const getById = (id) => home.find(p => p.id === id);
-
-            if (type === 'serve') {
-                // 각자 현재 존의 기본 서브 대형으로 정렬
-                home.forEach(p => {
-                    if (!p.isLibero && ZONE_COORDS[p.zone]) {
-                        p.x = ZONE_COORDS[p.zone].x;
-                        p.y = ZONE_COORDS[p.zone].y;
-                    } else if (p.isLibero) {
-                        p.x = 50; p.y = 192;
-                    }
-                });
-                state.ball = { x: 82, y: 205 };
-                showToast('기본 서브 대형이 적용되었습니다.');
-            } else if (type === 'receive_w') {
-                // 3인 리시브 대형 (OH 2명 + 리베로가 후위 리시브 라인 형성, 세터 전진 침투 대기)
-                const setter = getById('h1');
-                const oh1 = getById('h2');
-                const mb1 = getById('h3');
-                const op = getById('h4');
-                const oh2 = getById('h5');
-                const mb2 = getById('h6');
-                const lib = getById('hl');
-
-                if (setter) { setter.x = 74; setter.y = 132; }
-                if (mb1) { mb1.x = 45; mb1.y = 114; }
-                if (op) { op.x = 16; op.y = 118; }
-
-                // 3인 리시브 라인
-                if (oh2) { oh2.x = 22; oh2.y = 166; }
-                if (lib) { lib.visible = true; document.getElementById('chkHomeLibero').checked = true; lib.x = 50; lib.y = 172; }
-                if (oh1) { oh1.x = 78; oh1.y = 166; }
-                if (mb2) { mb2.x = 50; mb2.y = 192; } // 교체 대기
-
-                state.ball = { x: 50, y: 12 };
-                showToast('3인 서브리시브 & 세터 침투 대형이 적용되었습니다.');
-            } else if (type === 'defense_perimeter') {
-                // 수비 대형 (전위 2인 블로킹 + 4인 수비 커버)
-                const setter = getById('h1');
-                const oh1 = getById('h2');
-                const mb1 = getById('h3');
-                const op = getById('h4');
-                const oh2 = getById('h5');
-                const lib = getById('hl');
-
-                if (mb1) { mb1.x = 75; mb1.y = 107; }
-                if (oh1) { oh1.x = 86; oh1.y = 107; }
-                if (op) { op.x = 22; op.y = 138; }
-                if (oh2) { oh2.x = 24; oh2.y = 174; }
-                if (lib) { lib.x = 56; lib.y = 182; }
-                if (setter) { setter.x = 82; setter.y = 158; }
-
-                state.ball = { x: 20, y: 95 };
-                showToast('사이드 블로킹 & 후위 디그 수비 대형이 적용되었습니다.');
-            }
-
-            renderTokens(true);
-        }
-
-        /**
-         * ============================================================================
-         * 7-2. 9인제 전용 포메이션 프리셋 (기본 3-3-3, 서브리시브 대형, 수비 대형)
-         * ============================================================================
-         */
-        function apply9FormationPreset(type) {
-            if (state.gameFormat !== '9') return;
-            const home = state.players.filter(p => p.team === 'home');
-            const getById = (id) => home.find(p => p.id === id);
-
-            if (type === 'base333') {
-                // 표준 3-3-3 진형
-                const coords = {
-                    h9_fl: { x: 20, y: 118 }, h9_fc: { x: 50, y: 116 }, h9_fr: { x: 80, y: 118 },
-                    h9_ml: { x: 22, y: 148 }, h9_s:  { x: 50, y: 145 }, h9_mr: { x: 78, y: 148 },
-                    h9_bl: { x: 20, y: 178 }, h9_bc: { x: 50, y: 180 }, h9_br: { x: 80, y: 178 }
-                };
-                Object.entries(coords).forEach(([id, pt]) => {
-                    const p = getById(id);
-                    if (p) { p.x = pt.x; p.y = pt.y; }
-                });
-                state.ball = { x: 50, y: 100 };
-                showToast('9인제 기본 3-3-3 진형으로 초기화되었습니다.');
-            } else if (type === 'receive9') {
-                // 9인제 서브리시브 대형: 세터(S) 네트 우측 전진 + 5~6인 반원형 리시브 라인
-                const coords = {
-                    h9_fl: { x: 14, y: 122 },
-                    h9_fc: { x: 44, y: 118 },
-                    h9_fr: { x: 86, y: 122 },
-                    h9_s:  { x: 66, y: 112 }, // 세터 네트 앞 침투
-                    h9_ml: { x: 22, y: 152 },
-                    h9_mr: { x: 78, y: 152 },
-                    h9_bl: { x: 24, y: 180 },
-                    h9_bc: { x: 50, y: 174 },
-                    h9_br: { x: 76, y: 180 }
-                };
-                Object.entries(coords).forEach(([id, pt]) => {
-                    const p = getById(id);
-                    if (p) { p.x = pt.x; p.y = pt.y; }
-                });
-                state.ball = { x: 50, y: 10 };
-                showToast('9인제 서브리시브 대형(세터 전진 & 반원형 리시브)이 적용되었습니다.');
-            } else if (type === 'defense9') {
-                // 9인제 수비 대형: 전위 2~3인 블로킹 + 중위 연타/페인트 커버 + 후위 강타 디그
-                const coords = {
-                    h9_fl: { x: 64, y: 107 },
-                    h9_fc: { x: 76, y: 107 },
-                    h9_fr: { x: 88, y: 107 },
-                    h9_ml: { x: 24, y: 138 },
-                    h9_s:  { x: 52, y: 135 },
-                    h9_mr: { x: 78, y: 144 },
-                    h9_bl: { x: 20, y: 176 },
-                    h9_bc: { x: 50, y: 184 },
-                    h9_br: { x: 80, y: 176 }
-                };
-                Object.entries(coords).forEach(([id, pt]) => {
-                    const p = getById(id);
-                    if (p) { p.x = pt.x; p.y = pt.y; }
-                });
-                state.ball = { x: 22, y: 95 };
-                showToast('9인제 블로킹 & 연타/강타 커버 수비 대형이 적용되었습니다.');
-            }
-
-            renderTokens(true);
-        }
-
-        function setCourtMode(mode) {
-            state.courtMode = mode;
-            const btnFull = document.getElementById('btnViewFull');
-            const btnHalf = document.getElementById('btnViewHalf');
-
-            if (mode === 'full') {
-                btnFull.className = 'px-2.5 py-1 rounded-md bg-blue-600 text-white transition';
-                btnHalf.className = 'px-2.5 py-1 rounded-md text-slate-300 hover:text-white transition';
-            } else {
-                btnHalf.className = 'px-2.5 py-1 rounded-md bg-blue-600 text-white transition';
-                btnFull.className = 'px-2.5 py-1 rounded-md text-slate-300 hover:text-white transition';
-            }
-
-            resizeCourt();
-            renderTokens();
-        }
-
-        function swapSides() {
-            state.isSwapped = !state.isSwapped;
-            resizeCourt();
-            renderTokens(true);
-            showToast('코트 진영이 전환되었습니다.');
-        }
-
-        function switchSidebarTab(tabName) {
-            const tabRoster = document.getElementById('tab-roster');
-            const tabRotation = document.getElementById('tab-rotation');
-            const panelRoster = document.getElementById('panel-roster');
-            const panelRotation = document.getElementById('panel-rotation');
-
-            if (tabName === 'roster') {
-                tabRoster.className = 'flex-1 py-3 text-blue-400 border-b-2 border-blue-500 transition';
-                tabRotation.className = 'flex-1 py-3 text-slate-400 hover:text-slate-200 transition';
-                panelRoster.classList.remove('hidden');
-                panelRotation.classList.add('hidden');
-            } else {
-                tabRotation.className = 'flex-1 py-3 text-blue-400 border-b-2 border-blue-500 transition';
-                tabRoster.className = 'flex-1 py-3 text-slate-400 hover:text-slate-200 transition';
-                panelRotation.classList.remove('hidden');
-                panelRoster.classList.add('hidden');
-            }
-        }
-
-        /**
-         * ============================================================================
-         * 9. 작전 로컬 스토리지 저장/불러오기 & PNG 이미지 내보내기
-         * ============================================================================
-         */
-        const STORAGE_KEY = 'volleyboard_pro_tactics_v1';
-
-        function openSaveModal() {
-            loadSavedListUI();
-            const modal = document.getElementById('saveModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function closeSaveModal() {
-            const modal = document.getElementById('saveModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        function getSavedTactics() {
-            try {
-                return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-            } catch {
-                return [];
-            }
-        }
-
-        function saveCurrentTactic() {
-            const titleInput = document.getElementById('tacticTitleInput');
-            const title = titleInput.value.trim() || `배구 작전 ${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`;
-
-            const list = getSavedTactics();
-            const snapshot = {
-                id: Date.now().toString(),
-                title,
-                createdAt: new Date().toLocaleDateString('ko-KR'),
-                data: {
-                    gameFormat: state.gameFormat,
-                    courtMode: state.courtMode,
-                    isSwapped: state.isSwapped,
-                    showPositions: state.showPositions,
-                    awayVisible: state.awayVisible,
+// ... existing code ... -->
                     currentRotation: state.currentRotation,
                     players: JSON.parse(JSON.stringify(state.players)),
+                    benchPlayers: JSON.parse(JSON.stringify(state.benchPlayers)),
                     ball: { ...state.ball },
                     strokes: JSON.parse(JSON.stringify(state.strokes))
                 }
             };
-
-            list.unshift(snapshot);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-            titleInput.value = '';
-            loadSavedListUI();
-            showToast(`'${title}' 작전이 저장되었습니다.`);
-        }
-
-        function loadSavedListUI() {
-            const container = document.getElementById('savedTacticsList');
-            const list = getSavedTactics();
-
-            if (list.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-xs text-slate-500">저장된 작전이 없습니다.<br>위 입력창에서 현재 작전을 저장해보세요.</div>`;
-                return;
-            }
-
-            container.innerHTML = list.map(item => {
-                const fmt = item.data.gameFormat || '6';
-                const fmtBadge = fmt === '9'
-                    ? `<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold mr-1">9인제</span>`
-                    : `<span class="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 font-bold mr-1">6인제</span>`;
-                const subInfo = fmt === '9' ? '3×3 포메이션' : `로테이션 S${item.data.currentRotation || 1}`;
-
-                return `
-                <div class="flex items-center justify-between bg-slate-800/80 border border-slate-700 rounded-xl p-2.5">
-                    <div>
-                        <div class="text-xs font-bold text-white flex items-center">${fmtBadge}${escapeHtml(item.title)}</div>
-                        <div class="text-[10px] text-slate-400 mt-0.5">${item.createdAt} · ${subInfo}</div>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <button onclick="applySavedTactic('${item.id}')" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[11px] font-bold">불러오기</button>
-                        <button onclick="deleteSavedTactic('${item.id}')" class="px-2 py-1 bg-slate-700 hover:bg-rose-600 text-slate-300 hover:text-white rounded-lg text-[11px]">삭제</button>
-                    </div>
-                </div>
-            `}).join('');
-        }
-
-        function applySavedTactic(id) {
-            const list = getSavedTactics();
-            const found = list.find(item => item.id === id);
-            if (!found) return;
-
-            const d = found.data;
-            const targetFmt = d.gameFormat || '6';
-            state.gameFormat = targetFmt;
-            state.courtMode = d.courtMode || 'full';
-            state.isSwapped = !!d.isSwapped;
-            state.showPositions = d.showPositions !== undefined ? d.showPositions : true;
-            state.awayVisible = d.awayVisible !== undefined ? d.awayVisible : true;
-            state.currentRotation = d.currentRotation || 1;
+// ... existing code ... -->
             state.players = JSON.parse(JSON.stringify(d.players));
-            if (targetFmt === '6') state.players6Cache = state.players;
-            else state.players9Cache = state.players;
+            state.benchPlayers = JSON.parse(JSON.stringify(d.benchPlayers || (targetFmt === '6' ? createDefaultBench6() : createDefaultBench9())));
+            state.selectedSubId = null;
+            if (targetFmt === '6') {
+                state.players6Cache = state.players;
+                state.bench6Cache = state.benchPlayers;
+            } else {
+                state.players9Cache = state.players;
+                state.bench9Cache = state.benchPlayers;
+            }
 
             state.ball = { ...d.ball };
             state.strokes = JSON.parse(JSON.stringify(d.strokes || []));
@@ -1854,148 +1042,71 @@
             syncFormatUI();
             setCourtMode(state.courtMode);
             renderRosterSidebar();
+            renderBenchUI();
             renderTokens();
             redrawAllStrokes();
             closeSaveModal();
             showToast(`'${found.title}' (${targetFmt}인제) 작전을 불러왔습니다.`);
         }
-
-        function deleteSavedTactic(id) {
-            const list = getSavedTactics().filter(item => item.id !== id);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-            loadSavedListUI();
-        }
-
-        /**
-         * 현재 코트 + 드로잉 + 선수 이름 마커 + 배구공을 단일 고화질 PNG로 합성하여 다운로드
-         */
+// ... existing code ... -->
         function exportBoardToPNG() {
             const w = courtWrapper.clientWidth;
             const h = courtWrapper.clientHeight;
             const scale = 2; // 2배율 고화질 내보내기
+            const homeSubs = state.benchPlayers.filter(b => b.team === 'home');
+            const awaySubs = state.awayVisible && state.courtMode !== 'half'
+                ? state.benchPlayers.filter(b => b.team === 'away')
+                : [];
+            const hasBenchFooter = homeSubs.length > 0 || awaySubs.length > 0;
+            const footerH = hasBenchFooter ? 46 : 0;
 
             const exportCanvas = document.createElement('canvas');
             exportCanvas.width = w * scale;
-            exportCanvas.height = h * scale;
+            exportCanvas.height = (h + footerH) * scale;
             const ctx = exportCanvas.getContext('2d');
             ctx.scale(scale, scale);
 
             // 1. 배경 코트 & 드로잉 캔버스 복사
-            ctx.drawImage(courtBgCanvas, 0, 0, w, h);
-            ctx.drawImage(drawCanvas, 0, 0, w, h);
-
-            // 2. 선수 마커 그리기 (등번호 없이 이름 + 포지션 뱃지)
-            state.players.forEach(p => {
-                if (!p.visible) return;
-                if (p.team === 'away' && !state.awayVisible) return;
-                if (state.courtMode === 'half' && p.team === 'away') return;
-
-                const pos = logicalToPixel(p.x, p.y);
-                const radius = 23;
-
-                // 그림자
-                ctx.save();
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-                ctx.shadowBlur = 6;
-                ctx.shadowOffsetY = 3;
-
-                // 원형 배경색
-                if (p.team === 'home') {
-                    ctx.fillStyle = p.isLibero ? '#fbbf24' : '#2563eb';
-                } else {
-                    ctx.fillStyle = p.isLibero ? '#34d399' : '#e11d48';
-                }
-
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-
-                // 흰색 테두리
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2.5;
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-                ctx.stroke();
-
-                // 선수 이름 텍스트 (등번호 없음)
-                ctx.fillStyle = p.isLibero ? '#0f172a' : '#ffffff';
-                const fontSize = p.name.length <= 2 ? 12 : (p.name.length === 3 ? 11 : 10);
-                ctx.font = `bold ${fontSize}px "Noto Sans KR", sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(p.name, pos.x, pos.y + 1);
-
-                // 포지션 뱃지 (ON 상태일 때)
-                if (state.showPositions) {
-                    const bx = pos.x + 15;
-                    const by = pos.y - 15;
-                    ctx.fillStyle = '#0f172a';
-                    ctx.beginPath();
-                    ctx.roundRect(bx - 10, by - 7, 20, 14, 7);
-                    ctx.fill();
-                    ctx.strokeStyle = '#64748b';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = 'bold 9px Inter, sans-serif';
-                    ctx.fillText(p.pos, bx, by + 0.5);
-                }
-            });
-
-            // 3. 배구공 그리기
-            const bPos = logicalToPixel(state.ball.x, state.ball.y);
-            ctx.save();
-            ctx.shadowColor = 'rgba(0,0,0,0.45)';
-            ctx.shadowBlur = 5;
-            ctx.fillStyle = '#facc15';
-            ctx.beginPath();
-            ctx.arc(bPos.x, bPos.y, 13, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#1e293b';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            ctx.strokeStyle = '#2563eb';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
+// ... existing code ... -->
             ctx.arc(bPos.x, bPos.y, 8, 0.2, 2.3);
             ctx.stroke();
             ctx.restore();
 
-            // 4. 다운로드 트리거
+            // 4. 후보 선수 (BENCH) 하단 바 캡처 포함
+            if (hasBenchFooter) {
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(0, h, w, footerH);
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, h);
+                ctx.lineTo(w, h);
+                ctx.stroke();
+
+                ctx.font = 'bold 10px "Noto Sans KR", sans-serif';
+                ctx.textBaseline = 'middle';
+                ctx.textAlign = 'left';
+
+                let lineY = h + (awaySubs.length > 0 && homeSubs.length > 0 ? 14 : footerH / 2);
+                if (homeSubs.length > 0) {
+                    ctx.fillStyle = '#60a5fa';
+                    const homeText = '우리팀 후보: ' + homeSubs.map(s => `${s.name}(${s.pos})`).join(' · ');
+                    ctx.fillText(homeText, 12, lineY);
+                    lineY += 18;
+                }
+                if (awaySubs.length > 0) {
+                    ctx.fillStyle = '#fb7185';
+                    const awayText = '상대팀 후보: ' + awaySubs.map(s => `${s.name}(${s.pos})`).join(' · ');
+                    ctx.fillText(awayText, 12, lineY);
+                }
+            }
+
+            // 5. 다운로드 트리거
             const link = document.createElement('a');
             link.download = `배구작전판_${state.gameFormat}인제_${new Date().toISOString().slice(0, 10)}.png`;
             link.href = exportCanvas.toDataURL('image/png');
             link.click();
 
-            showToast(`${state.gameFormat}인제 작전판 이미지가 PNG 파일로 다운로드되었습니다.`);
+            showToast(`${state.gameFormat}인제 작전판 이미지(후보 명단 포함)가 저장되었습니다.`);
         }
-
-        /**
-         * 유틸리티 함수
-         */
-        function escapeHtml(str) {
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-        }
-
-        let toastTimer = null;
-        function showToast(msg) {
-            const el = document.getElementById('toast');
-            el.textContent = msg;
-            el.classList.remove('opacity-0');
-            el.classList.add('opacity-100');
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => {
-                el.classList.remove('opacity-100');
-                el.classList.add('opacity-0');
-            }, 2400);
-        }
-    </script>
-</body>
-</html>
+// ... existing code ... -->
