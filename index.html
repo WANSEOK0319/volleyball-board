@@ -149,7 +149,7 @@
             <!-- 실시간 공동 작업방 버튼 -->
             <button id="btnCollabHeader" onclick="openCollabModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/50 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                <span id="collabBtnLabel">같이 작업하기</span>
+                <span id="collabBtnLabel">공용 작전판 연결중...</span>
                 <span id="collabLiveDot" class="hidden w-2 h-2 rounded-full bg-emerald-300 animate-ping"></span>
             </button>
 
@@ -519,8 +519,8 @@
         <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-md shadow-2xl space-y-4">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
-                    <h3 class="text-base font-bold text-white">실시간 공동 작업방</h3>
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <h3 class="text-base font-bold text-white">공용 작전판 실시간 상태</h3>
                 </div>
                 <button onclick="closeCollabModal()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
             </div>
@@ -536,66 +536,38 @@
                 </div>
             </div>
 
-            <!-- 미접속 상태 UI -->
-            <div id="collabDisconnectedView" class="space-y-3">
-                <div class="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-3.5 space-y-2">
-                    <div class="text-xs font-bold text-indigo-300">1. 새 공동 작업방 만들기</div>
-                    <p class="text-[11px] text-slate-400 leading-relaxed">현재 코트의 선수 배치·후보·드로잉을 공유 방으로 열고 팀원들을 초대합니다.</p>
-                    <button onclick="createCollabRoom()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black shadow-md transition">
-                        + 새 공동 작업방 생성하기
-                    </button>
-                </div>
-
-                <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-3.5 space-y-2">
-                    <div class="text-xs font-bold text-slate-200">2. 방 코드로 입장하기</div>
-                    <div class="flex gap-2">
-                        <input type="text" id="joinRoomCodeInput" maxlength="8" placeholder="6자리 방 코드 (예: VB8421)"
-                            onkeydown="if(event.key==='Enter') joinCollabRoom()"
-                            class="flex-1 uppercase bg-slate-900 border border-slate-600 focus:border-emerald-400 rounded-lg px-3 py-2 text-xs text-white font-mono font-bold tracking-wider focus:outline-none">
-                        <button onclick="joinCollabRoom()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shrink-0 transition">입장하기</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 접속 중 상태 UI -->
-            <div id="collabConnectedView" class="hidden space-y-3">
+            <!-- 공용 작전판 안내 및 링크 공유 -->
+            <div id="collabConnectedView" class="space-y-3">
                 <div class="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-3.5 space-y-2.5">
                     <div class="flex items-center justify-between">
                         <span class="text-[11px] font-bold text-emerald-300 flex items-center gap-1.5">
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            실시간 동기화 연결됨
+                            웹페이지 자동 저장 · 실시간 동기화 중
                         </span>
-                        <span id="activeRoomCodeBadge" class="px-2.5 py-0.5 rounded-md bg-slate-900 border border-emerald-500/50 text-emerald-300 font-mono text-xs font-black tracking-widest">------</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-900 border border-emerald-500/50 text-emerald-300 text-[10px] font-bold">단일 공용 보드</span>
                     </div>
-
-                    <div class="flex gap-2">
-                        <button onclick="copyCollabRoomCode()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-lg text-xs font-bold transition">
-                            방 코드 복사
-                        </button>
-                        <button onclick="copyCollabInviteLink()" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition">
-                            초대 링크 복사
-                        </button>
-                    </div>
+                    <p class="text-[11px] text-slate-300 leading-relaxed">
+                        이 웹페이지에 접속한 모든 팀원이 <strong>하나의 작전판</strong>을 함께 보며 수정하고, 마지막 작업 내용이 웹페이지에 자동 저장됩니다.
+                    </p>
+                    <button onclick="copyCollabInviteLink()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition">
+                        웹페이지 주소 복사해서 팀원에게 공유하기
+                    </button>
                 </div>
 
                 <!-- 현재 접속자 목록 -->
                 <div class="bg-slate-800/70 border border-slate-700 rounded-xl p-3 space-y-2">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-slate-200">함께 작업 중인 팀원</span>
+                        <span class="text-xs font-bold text-slate-200">현재 함께 보고 있는 팀원</span>
                         <span id="collabMemberCount" class="text-[11px] font-bold text-indigo-300">1명 접속</span>
                     </div>
                     <div id="collabMembersList" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
                         <!-- JS 렌더링 -->
                     </div>
                 </div>
-
-                <button onclick="leaveCollabRoom()" class="w-full py-2 bg-rose-950/70 hover:bg-rose-900 text-rose-200 border border-rose-700/60 rounded-xl text-xs font-bold transition">
-                    방 나가기 (혼자 작업으로 전환)
-                </button>
             </div>
 
             <div id="collabOfflineNotice" class="hidden text-[11px] text-amber-300 bg-amber-950/50 border border-amber-500/30 rounded-lg px-3 py-2">
-                클라우드 동기화 서버에 연결할 수 없는 오프라인 환경입니다. 혼자 작업 모드는 정상 이용 가능합니다.
+                클라우드 서버에 연결되지 않아 현재 브라우저에 자동 저장됩니다.
             </div>
         </div>
     </div>
@@ -616,10 +588,12 @@
         let fbDb = null;
         let fbUser = null;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'volleyball-tactics-board';
+        const SINGLE_SHARED_BOARD_ID = 'MAIN_SHARED_BOARD';
+        const LOCAL_SINGLE_STORAGE_KEY = 'volleyboard_single_state_v1';
 
         const collabEngine = {
             ready: false,
-            roomId: null,
+            roomId: SINGLE_SHARED_BOARD_ID,
             nickname: localStorage.getItem('vb_collab_nick') || `코치${Math.floor(100 + Math.random() * 900)}`,
             badgeColor: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'][Math.floor(Math.random() * 6)],
             unsubRoom: null,
@@ -628,10 +602,14 @@
             pushTimer: null,
             draggingPlayerId: null,
             isApplyingRemote: false,
+            hasInitialLoaded: false,
             lastPushedJson: ''
         };
 
         async function initFirebaseSafe() {
+            // 먼저 로컬에 저장된 마지막 단일 작업 상태가 있으면 즉시 복원
+            restoreFromLocalSingleCache();
+
             try {
                 if (typeof __firebase_config === 'undefined' || !__firebase_config) {
                     throw new Error('Firebase config not provided');
@@ -653,23 +631,37 @@
                 });
 
                 collabEngine.ready = true;
+                collabEngine.roomId = SINGLE_SHARED_BOARD_ID;
 
-                // URL 쿼리(?room=XXXXXX) 또는 해시(#room=XXXXXX) 자동 입장 확인
-                const searchParams = new URLSearchParams(window.location.search);
-                const queryRoom = searchParams.get('room');
-                const hashMatch = window.location.hash.match(/room=([A-Za-z0-9]{4,12})/);
-                const autoCode = (queryRoom || (hashMatch && hashMatch[1]) || '').trim().toUpperCase();
-
-                if (autoCode) {
-                    setTimeout(() => {
-                        joinCollabRoomByCode(autoCode);
-                    }, 200);
+                // 단일 공용 작전판 문서 확인 후 자동 연결
+                const roomRef = getRoomDocRef(SINGLE_SHARED_BOARD_ID);
+                const snap = await getDoc(roomRef);
+                if (!snap.exists()) {
+                    await setDoc(roomRef, buildSyncPayload());
                 }
+                startRoomListeners(SINGLE_SHARED_BOARD_ID);
             } catch (err) {
                 collabEngine.ready = false;
+                collabEngine.roomId = null;
+                updateCollabHeaderUI();
                 const notice = document.getElementById('collabOfflineNotice');
                 if (notice) notice.classList.remove('hidden');
             }
+        }
+
+        function saveToLocalSingleCache(payload) {
+            try {
+                localStorage.setItem(LOCAL_SINGLE_STORAGE_KEY, JSON.stringify(payload));
+            } catch (e) {}
+        }
+
+        function restoreFromLocalSingleCache() {
+            try {
+                const raw = localStorage.getItem(LOCAL_SINGLE_STORAGE_KEY);
+                if (!raw) return;
+                const data = JSON.parse(raw);
+                applyRemoteBoardData(data);
+            } catch (e) {}
         }
 
         function getRoomDocRef(roomCode) {
@@ -701,6 +693,9 @@
         }
 
         function scheduleSyncPush(immediate = false) {
+            const payload = buildSyncPayload();
+            saveToLocalSingleCache(payload);
+
             if (!collabEngine.ready || !collabEngine.roomId || !fbUser || collabEngine.isApplyingRemote) return;
 
             clearTimeout(collabEngine.pushTimer);
@@ -708,26 +703,103 @@
             collabEngine.pushTimer = setTimeout(async () => {
                 if (!collabEngine.roomId || !fbUser) return;
                 try {
-                    const payload = buildSyncPayload();
+                    const latestPayload = buildSyncPayload();
                     const serialized = JSON.stringify({
-                        g: payload.gameFormat,
-                        s: payload.swapped,
-                        p: payload.showPositions,
-                        a: payload.awayVisible,
-                        r: payload.currentRotation,
-                        pl: payload.players,
-                        bn: payload.benchPlayers,
-                        bl: payload.ball,
-                        st: payload.strokes
+                        g: latestPayload.gameFormat,
+                        s: latestPayload.swapped,
+                        p: latestPayload.showPositions,
+                        a: latestPayload.awayVisible,
+                        r: latestPayload.currentRotation,
+                        pl: latestPayload.players,
+                        bn: latestPayload.benchPlayers,
+                        bl: latestPayload.ball,
+                        st: latestPayload.strokes
                     });
                     if (serialized === collabEngine.lastPushedJson) return;
                     collabEngine.lastPushedJson = serialized;
 
-                    await setDoc(getRoomDocRef(collabEngine.roomId), payload, { merge: true });
+                    await setDoc(getRoomDocRef(collabEngine.roomId), latestPayload, { merge: true });
                 } catch (err) {
                     console.warn('Sync push failed:', err);
                 }
             }, delay);
+        }
+
+        function applyRemoteBoardData(data) {
+            if (!data) return;
+            collabEngine.isApplyingRemote = true;
+            try {
+                const formatChanged = data.gameFormat && data.gameFormat !== state.gameFormat;
+                if (formatChanged) {
+                    state.gameFormat = data.gameFormat;
+                    syncFormatUI();
+                    resizeCourt();
+                }
+
+                if (typeof data.swapped === 'boolean' && data.swapped !== state.swapped) {
+                    state.swapped = data.swapped;
+                    drawCourtBackground(courtWrapper.clientWidth, courtWrapper.clientHeight);
+                }
+
+                if (typeof data.showPositions === 'boolean' && data.showPositions !== state.showPositions) {
+                    state.showPositions = data.showPositions;
+                    const btn = document.getElementById('btnTogglePos');
+                    btn.querySelector('span').textContent = `포지션: ${state.showPositions ? 'ON' : 'OFF'}`;
+                    btn.classList.toggle('text-emerald-400', state.showPositions);
+                    btn.classList.toggle('text-slate-400', !state.showPositions);
+                }
+
+                if (typeof data.awayVisible === 'boolean') {
+                    state.awayVisible = data.awayVisible;
+                    const chk = document.getElementById('chkAwayVisible');
+                    if (chk) chk.checked = state.awayVisible;
+                }
+
+                if (typeof data.currentRotation === 'number') {
+                    state.currentRotation = data.currentRotation;
+                    const badge = document.getElementById('currentRotationBadge');
+                    if (badge) badge.textContent = `S${state.currentRotation} (${state.currentRotation}번 자리)`;
+                }
+
+                if (Array.isArray(data.players)) {
+                    const draggingId = collabEngine.draggingPlayerId;
+                    const draggingPlayer = draggingId ? state.players.find(p => p.id === draggingId) : null;
+                    const keptCoords = draggingPlayer ? { x: draggingPlayer.x, y: draggingPlayer.y } : null;
+
+                    state.players = data.players;
+                    if (keptCoords) {
+                        const restored = state.players.find(p => p.id === draggingId);
+                        if (restored) {
+                            restored.x = keptCoords.x;
+                            restored.y = keptCoords.y;
+                        }
+                    }
+                    if (state.gameFormat === '6') state.players6Cache = state.players;
+                    else state.players9Cache = state.players;
+                }
+
+                if (Array.isArray(data.benchPlayers)) {
+                    state.benchPlayers = data.benchPlayers;
+                    if (state.gameFormat === '6') state.bench6Cache = state.benchPlayers;
+                    else state.bench9Cache = state.benchPlayers;
+                }
+
+                if (data.ball && typeof data.ball.x === 'number') {
+                    state.ball = data.ball;
+                }
+
+                if (Array.isArray(data.strokes)) {
+                    state.strokes = data.strokes;
+                }
+
+                saveToLocalSingleCache(data);
+                renderRosterSidebar();
+                renderBenchUI();
+                renderTokens(true);
+                redrawAllStrokes();
+            } finally {
+                collabEngine.isApplyingRemote = false;
+            }
         }
 
         async function registerPresence(roomCode) {
@@ -749,84 +821,14 @@
             collabEngine.roomId = roomCode;
             updateCollabHeaderUI();
 
-            // 1. 실시간 보드 상태 구독
+            // 1. 단일 공용 작전판 실시간 상태 구독 (최초 접속 시 저장된 상태 즉시 로드)
             collabEngine.unsubRoom = onSnapshot(getRoomDocRef(roomCode), (snap) => {
                 if (!snap.exists()) return;
                 const data = snap.data();
-                if (!data || data.updatedBy === (fbUser && fbUser.uid)) return;
-
-                collabEngine.isApplyingRemote = true;
-                try {
-                    const formatChanged = data.gameFormat && data.gameFormat !== state.gameFormat;
-                    if (formatChanged) {
-                        state.gameFormat = data.gameFormat;
-                        syncFormatUI();
-                        resizeCourt();
-                    }
-
-                    if (typeof data.swapped === 'boolean' && data.swapped !== state.swapped) {
-                        state.swapped = data.swapped;
-                        drawCourtBackground(courtWrapper.clientWidth, courtWrapper.clientHeight);
-                    }
-
-                    if (typeof data.showPositions === 'boolean' && data.showPositions !== state.showPositions) {
-                        state.showPositions = data.showPositions;
-                        const btn = document.getElementById('btnTogglePos');
-                        btn.querySelector('span').textContent = `포지션: ${state.showPositions ? 'ON' : 'OFF'}`;
-                        btn.classList.toggle('text-emerald-400', state.showPositions);
-                        btn.classList.toggle('text-slate-400', !state.showPositions);
-                    }
-
-                    if (typeof data.awayVisible === 'boolean') {
-                        state.awayVisible = data.awayVisible;
-                        const chk = document.getElementById('chkAwayVisible');
-                        if (chk) chk.checked = state.awayVisible;
-                    }
-
-                    if (typeof data.currentRotation === 'number') {
-                        state.currentRotation = data.currentRotation;
-                        const badge = document.getElementById('currentRotationBadge');
-                        if (badge) badge.textContent = `S${state.currentRotation} (${state.currentRotation}번 자리)`;
-                    }
-
-                    if (Array.isArray(data.players)) {
-                        const draggingId = collabEngine.draggingPlayerId;
-                        const draggingPlayer = draggingId ? state.players.find(p => p.id === draggingId) : null;
-                        const keptCoords = draggingPlayer ? { x: draggingPlayer.x, y: draggingPlayer.y } : null;
-
-                        state.players = data.players;
-                        if (keptCoords) {
-                            const restored = state.players.find(p => p.id === draggingId);
-                            if (restored) {
-                                restored.x = keptCoords.x;
-                                restored.y = keptCoords.y;
-                            }
-                        }
-                        if (state.gameFormat === '6') state.players6Cache = state.players;
-                        else state.players9Cache = state.players;
-                    }
-
-                    if (Array.isArray(data.benchPlayers)) {
-                        state.benchPlayers = data.benchPlayers;
-                        if (state.gameFormat === '6') state.bench6Cache = state.benchPlayers;
-                        else state.bench9Cache = state.benchPlayers;
-                    }
-
-                    if (data.ball && typeof data.ball.x === 'number') {
-                        state.ball = data.ball;
-                    }
-
-                    if (Array.isArray(data.strokes)) {
-                        state.strokes = data.strokes;
-                    }
-
-                    renderRosterSidebar();
-                    renderBenchUI();
-                    renderTokens(true);
-                    redrawAllStrokes();
-                } finally {
-                    collabEngine.isApplyingRemote = false;
-                }
+                if (!data) return;
+                if (collabEngine.hasInitialLoaded && data.updatedBy === (fbUser && fbUser.uid)) return;
+                collabEngine.hasInitialLoaded = true;
+                applyRemoteBoardData(data);
             }, (err) => {
                 console.warn('Room listener error:', err);
             });
@@ -873,7 +875,7 @@
             const count = Math.max(1, members.length);
             if (countEl) countEl.textContent = `${count}명 접속 중`;
             if (collabEngine.roomId && btnLabel) {
-                btnLabel.textContent = `방 ${collabEngine.roomId} (${count}명)`;
+                btnLabel.textContent = `공용 작전판 (${count}명)`;
             }
 
             if (!listEl) return;
@@ -897,23 +899,15 @@
             const btn = document.getElementById('btnCollabHeader');
             const label = document.getElementById('collabBtnLabel');
             const dot = document.getElementById('collabLiveDot');
-            const disView = document.getElementById('collabDisconnectedView');
-            const conView = document.getElementById('collabConnectedView');
-            const codeBadge = document.getElementById('activeRoomCodeBadge');
 
             if (collabEngine.roomId) {
                 btn.className = 'px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-300/60 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition';
-                label.textContent = `방 ${collabEngine.roomId}`;
+                label.textContent = '공용 작전판 (동기화됨)';
                 dot.classList.remove('hidden');
-                if (disView) disView.classList.add('hidden');
-                if (conView) conView.classList.remove('hidden');
-                if (codeBadge) codeBadge.textContent = collabEngine.roomId;
             } else {
-                btn.className = 'px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/50 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition';
-                label.textContent = '같이 작업하기';
+                btn.className = 'px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500/50 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition';
+                label.textContent = '로컬 자동저장';
                 dot.classList.add('hidden');
-                if (disView) disView.classList.remove('hidden');
-                if (conView) conView.classList.add('hidden');
             }
         }
 
@@ -943,90 +937,11 @@
             if (notify) showToast(`표시 이름이 '${trimmed}'(으)로 변경되었습니다.`);
         };
 
-        window.createCollabRoom = async function() {
-            if (!collabEngine.ready || !fbUser) {
-                showToast('현재 오프라인 상태여서 공동 작업방을 만들 수 없습니다.');
-                return;
-            }
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-            let code = 'VB';
-            for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-
-            try {
-                const payload = buildSyncPayload();
-                await setDoc(getRoomDocRef(code), payload);
-                const url = new URL(window.location.href);
-                url.searchParams.set('room', code);
-                url.hash = '';
-                window.history.replaceState(null, '', url.toString());
-                startRoomListeners(code);
-                showToast(`공동 작업방(${code})이 생성되었습니다! 초대 링크를 공유하세요.`);
-            } catch (err) {
-                console.error(err);
-                showToast('방 생성 중 오류가 발생했습니다.');
-            }
-        };
-
-        window.joinCollabRoom = function() {
-            const raw = document.getElementById('joinRoomCodeInput').value.trim().toUpperCase();
-            if (!raw) {
-                showToast('입장할 방 코드를 입력해 주세요.');
-                return;
-            }
-            joinCollabRoomByCode(raw);
-        };
-
-        async function joinCollabRoomByCode(code) {
-            if (!collabEngine.ready || !fbUser) {
-                showToast('클라우드 연결이 준비되지 않았습니다.');
-                return;
-            }
-            try {
-                const snap = await getDoc(getRoomDocRef(code));
-                if (!snap.exists()) {
-                    showToast(`방 코드 '${code}'를 찾을 수 없습니다. 코드를 다시 확인해 주세요.`);
-                    return;
-                }
-                const url = new URL(window.location.href);
-                url.searchParams.set('room', code);
-                url.hash = '';
-                window.history.replaceState(null, '', url.toString());
-                startRoomListeners(code);
-                showToast(`공동 작업방(${code})에 자동 입장했습니다!`);
-            } catch (err) {
-                console.error(err);
-                showToast('방 입장 중 오류가 발생했습니다.');
-            }
-        }
-
-        window.leaveCollabRoom = async function() {
-            const oldRoom = collabEngine.roomId;
-            stopRoomListeners();
-            collabEngine.roomId = null;
+        window.copyCollabInviteLink = function() {
             const url = new URL(window.location.href);
             url.searchParams.delete('room');
             url.hash = '';
-            window.history.replaceState(null, '', url.toString());
-            updateCollabHeaderUI();
-            if (oldRoom && fbUser && fbDb) {
-                try {
-                    await deleteDoc(getMemberDocRef(oldRoom, fbUser.uid));
-                } catch (e) {}
-            }
-            showToast('공동 작업방에서 나와 혼자 작업 모드로 전환되었습니다.');
-        };
-
-        window.copyCollabRoomCode = function() {
-            if (!collabEngine.roomId) return;
-            copyTextSafe(collabEngine.roomId, `방 코드(${collabEngine.roomId})가 복사되었습니다.`);
-        };
-
-        window.copyCollabInviteLink = function() {
-            if (!collabEngine.roomId) return;
-            const url = new URL(window.location.href);
-            url.searchParams.set('room', collabEngine.roomId);
-            url.hash = '';
-            copyTextSafe(url.toString(), '원클릭 초대 링크가 복사되었습니다! 카톡방에 붙여넣기 하세요.');
+            copyTextSafe(url.toString(), '웹페이지 주소가 복사되었습니다! 팀원들과 함께 접속해 작업하세요.');
         };
 
         function copyTextSafe(text, successMsg) {
