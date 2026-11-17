@@ -146,11 +146,17 @@
                 <span>작전 저장함</span>
             </button>
 
-            <!-- 실시간 공동 작업방 버튼 -->
-            <button id="btnCollabHeader" onclick="openCollabModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/50 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                <span id="collabBtnLabel">공용 작전판 연결중...</span>
+            <!-- 구글 시트 클라우드 연동 버튼 -->
+            <button id="btnCollabHeader" onclick="openCollabModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                <span id="collabBtnLabel">☁️ 구글 시트 연결 설정</span>
                 <span id="collabLiveDot" class="hidden w-2 h-2 rounded-full bg-emerald-300 animate-ping"></span>
+            </button>
+
+            <!-- 지금 동기화 버튼 -->
+            <button id="btnSyncNow" onclick="manualSyncNow()" title="구글 시트와 지금 즉시 동기화" class="hidden px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs font-bold items-center gap-1 transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <span class="hidden md:inline">지금 동기화</span>
             </button>
 
             <!-- PNG 내보내기 -->
@@ -514,60 +520,52 @@
         </div>
     </div>
 
-    <!-- 실시간 공동 작업방 모달 -->
+    <!-- 구글 스프레드시트(Apps Script) 클라우드 연결 설정 모달 -->
     <div id="collabModal" class="fixed inset-0 bg-black/70 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-md shadow-2xl space-y-4">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <h3 class="text-base font-bold text-white">공용 작전판 실시간 상태</h3>
+                    <span id="modalCloudDot" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                    <h3 class="text-base font-bold text-white">구글 스프레드시트 클라우드 연결</h3>
                 </div>
                 <button onclick="closeCollabModal()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
             </div>
 
-            <!-- 내 닉네임 설정 -->
-            <div class="bg-slate-800/70 p-3 rounded-xl border border-slate-700/80 space-y-1.5">
-                <label class="block text-[11px] font-bold text-slate-300">내 표시 이름 (팀원에게 보이는 이름)</label>
-                <div class="flex gap-2">
-                    <input type="text" id="collabNicknameInput" maxlength="10" placeholder="예: 감독, 세터, 주장"
-                        onchange="updateCollabNickname(this.value)"
-                        class="flex-1 bg-slate-900 border border-slate-600 focus:border-indigo-400 rounded-lg px-3 py-1.5 text-xs text-white font-semibold focus:outline-none">
-                    <button onclick="updateCollabNickname(document.getElementById('collabNicknameInput').value, true)" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-bold text-slate-200 rounded-lg transition">변경</button>
+            <!-- 상태 요약 배너 -->
+            <div id="gasStatusBanner" class="bg-slate-800/80 border border-slate-700 rounded-xl p-3 space-y-1">
+                <div class="flex items-center justify-between">
+                    <span id="gasStatusTitle" class="text-xs font-bold text-amber-300">오프라인 / URL 미설정</span>
+                    <span id="gasLastSyncText" class="text-[10px] text-slate-400">로컬 브라우저 자동저장 중</span>
                 </div>
+                <p class="text-[11px] text-slate-300 leading-relaxed">
+                    Google Apps Script 웹 앱 URL을 연결하면 팀 전체가 <strong>하나의 구글 시트(A1 셀)</strong>에 작전을 자동 저장하고 2.5초마다 실시간 동기화합니다.
+                </p>
             </div>
 
-            <!-- 공용 작전판 안내 및 링크 공유 -->
-            <div id="collabConnectedView" class="space-y-3">
-                <div class="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-3.5 space-y-2.5">
-                    <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-bold text-emerald-300 flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            웹페이지 자동 저장 · 실시간 동기화 중
-                        </span>
-                        <span class="px-2 py-0.5 rounded bg-slate-900 border border-emerald-500/50 text-emerald-300 text-[10px] font-bold">단일 공용 보드</span>
-                    </div>
-                    <p class="text-[11px] text-slate-300 leading-relaxed">
-                        이 웹페이지에 접속한 모든 팀원이 <strong>하나의 작전판</strong>을 함께 보며 수정하고, 마지막 작업 내용이 웹페이지에 자동 저장됩니다.
-                    </p>
-                    <button onclick="copyCollabInviteLink()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition">
-                        웹페이지 주소 복사해서 팀원에게 공유하기
+            <!-- 웹 앱 URL 입력 및 저장 -->
+            <div class="bg-slate-800/70 p-3.5 rounded-xl border border-slate-700/80 space-y-2">
+                <label class="block text-[11px] font-bold text-slate-200">Google Apps Script 웹 앱 URL</label>
+                <input type="url" id="gasUrlInput" placeholder="https://script.google.com/macros/s/.../exec"
+                    class="w-full bg-slate-900 border border-slate-600 focus:border-emerald-400 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none">
+                <div class="flex gap-2 pt-1">
+                    <button onclick="saveGasUrlFromModal()" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition">
+                        연결 저장 & 즉시 동기화
+                    </button>
+                    <button onclick="clearGasUrlFromModal()" class="px-3 py-2 bg-slate-700 hover:bg-rose-900/70 text-slate-300 hover:text-rose-200 rounded-lg text-xs font-bold transition">
+                        연결 해제
                     </button>
                 </div>
-
-                <!-- 현재 접속자 목록 -->
-                <div class="bg-slate-800/70 border border-slate-700 rounded-xl p-3 space-y-2">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-slate-200">현재 함께 보고 있는 팀원</span>
-                        <span id="collabMemberCount" class="text-[11px] font-bold text-indigo-300">1명 접속</span>
-                    </div>
-                    <div id="collabMembersList" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
-                        <!-- JS 렌더링 -->
-                    </div>
-                </div>
             </div>
 
-            <div id="collabOfflineNotice" class="hidden text-[11px] text-amber-300 bg-amber-950/50 border border-amber-500/30 rounded-lg px-3 py-2">
-                클라우드 서버에 연결되지 않아 현재 브라우저에 자동 저장됩니다.
+            <!-- 팀원 공유 안내 -->
+            <div class="bg-slate-800/50 border border-slate-700/70 rounded-xl p-3 space-y-2">
+                <div class="text-[11px] font-bold text-sky-300">💡 GitHub Pages 영구 배포 팁</div>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                    GitHub 저장소의 <code class="text-slate-200">index.html</code> 상단 <code class="text-amber-300">const GAS_WEB_APP_URL = "";</code> 안에 URL을 넣고 커밋하면, 링크로 접속하는 모든 팀원이 별도 입력 없이 즉시 연결됩니다.
+                </p>
+                <button onclick="copyCollabInviteLink()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition">
+                    웹페이지 주소 복사해서 팀원에게 공유하기
+                </button>
             </div>
         </div>
     </div>
@@ -577,76 +575,98 @@
         알림 메시지
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <script>
+        /**
+         * ============================================================================
+         * [중요] Google Apps Script (구글 스프레드시트) 웹 앱 URL 설정
+         * GitHub Pages에 배포할 때 아래 따옴표("") 안에 발급받은 웹 앱 주소를 붙여넣으세요.
+         * 예: const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycb.../exec";
+         * ============================================================================
+         */
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbztl-53ue1g9LFU0G1VaqfXKcLRVH8HIFZ12NODTO1pyXrNK9Qv-ENK2CStT_fS7UQr/exec";
 
-        // Firebase 안전 초기화 (로컬 오프라인/미설정 환경에서도 앱이 멈추지 않도록 보호)
-        let fbApp = null;
-        let fbAuth = null;
-        let fbDb = null;
-        let fbUser = null;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'volleyball-tactics-board';
-        const SINGLE_SHARED_BOARD_ID = 'MAIN_SHARED_BOARD';
+        const GAS_STORAGE_URL_KEY = 'volleyboard_gas_webapp_url_v1';
         const LOCAL_SINGLE_STORAGE_KEY = 'volleyboard_single_state_v1';
 
-        const collabEngine = {
-            ready: false,
-            roomId: SINGLE_SHARED_BOARD_ID,
-            nickname: localStorage.getItem('vb_collab_nick') || `코치${Math.floor(100 + Math.random() * 900)}`,
-            badgeColor: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'][Math.floor(Math.random() * 6)],
-            unsubRoom: null,
-            unsubMembers: null,
-            heartbeatTimer: null,
+        const gasSync = {
+            clientId: 'vb_' + Math.random().toString(36).slice(2, 10),
+            url: (GAS_WEB_APP_URL || '').trim() || (localStorage.getItem(GAS_STORAGE_URL_KEY) || '').trim(),
+            pollTimer: null,
             pushTimer: null,
-            draggingPlayerId: null,
+            isDragging: false,
+            isDrawing: false,
+            isPushing: false,
+            isPolling: false,
             isApplyingRemote: false,
-            hasInitialLoaded: false,
-            lastPushedJson: ''
+            lastKnownUpdatedAt: 0,
+            lastSyncLabel: '로컬 브라우저 자동저장 중'
         };
 
-        async function initFirebaseSafe() {
-            // 먼저 로컬에 저장된 마지막 단일 작업 상태가 있으면 즉시 복원
-            restoreFromLocalSingleCache();
+        function getActiveGasUrl() {
+            const hardcoded = (GAS_WEB_APP_URL || '').trim();
+            if (hardcoded) return hardcoded;
+            return (localStorage.getItem(GAS_STORAGE_URL_KEY) || '').trim();
+        }
 
-            try {
-                if (typeof __firebase_config === 'undefined' || !__firebase_config) {
-                    throw new Error('Firebase config not provided');
+        function updateCloudHeaderUI(statusType = 'idle', customLabel = '') {
+            const btn = document.getElementById('btnCollabHeader');
+            const label = document.getElementById('collabBtnLabel');
+            const dot = document.getElementById('collabLiveDot');
+            const syncNowBtn = document.getElementById('btnSyncNow');
+            const modalDot = document.getElementById('modalCloudDot');
+            const statusTitle = document.getElementById('gasStatusTitle');
+            const lastSyncText = document.getElementById('gasLastSyncText');
+
+            const activeUrl = getActiveGasUrl();
+            gasSync.url = activeUrl;
+
+            if (!activeUrl) {
+                btn.className = 'px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition';
+                label.textContent = customLabel || '☁️ 구글 시트 연결 설정';
+                dot.classList.add('hidden');
+                if (syncNowBtn) {
+                    syncNowBtn.classList.add('hidden');
+                    syncNowBtn.classList.remove('flex');
                 }
-                const firebaseConfig = JSON.parse(__firebase_config);
-                fbApp = initializeApp(firebaseConfig);
-                fbAuth = getAuth(fbApp);
-                fbDb = getFirestore(fbApp);
-
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(fbAuth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(fbAuth);
+                if (modalDot) modalDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+                if (statusTitle) {
+                    statusTitle.textContent = '오프라인 / URL 미설정';
+                    statusTitle.className = 'text-xs font-bold text-amber-300';
                 }
-
-                fbUser = fbAuth.currentUser;
-                onAuthStateChanged(fbAuth, (user) => {
-                    fbUser = user;
-                });
-
-                collabEngine.ready = true;
-                collabEngine.roomId = SINGLE_SHARED_BOARD_ID;
-
-                // 단일 공용 작전판 문서 확인 후 자동 연결
-                const roomRef = getRoomDocRef(SINGLE_SHARED_BOARD_ID);
-                const snap = await getDoc(roomRef);
-                if (!snap.exists()) {
-                    await setDoc(roomRef, buildSyncPayload());
-                }
-                startRoomListeners(SINGLE_SHARED_BOARD_ID);
-            } catch (err) {
-                collabEngine.ready = false;
-                collabEngine.roomId = null;
-                updateCollabHeaderUI();
-                const notice = document.getElementById('collabOfflineNotice');
-                if (notice) notice.classList.remove('hidden');
+                if (lastSyncText) lastSyncText.textContent = '로컬 브라우저 자동저장 중';
+                return;
             }
+
+            if (syncNowBtn) {
+                syncNowBtn.classList.remove('hidden');
+                syncNowBtn.classList.add('flex');
+            }
+
+            if (statusType === 'saving') {
+                btn.className = 'px-3 py-1.5 bg-blue-600 text-white border border-blue-300/60 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition';
+                label.textContent = '☁️ 저장 중...';
+                dot.classList.remove('hidden');
+            } else if (statusType === 'error') {
+                btn.className = 'px-3 py-1.5 bg-rose-700 hover:bg-rose-600 text-white border border-rose-400/60 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition';
+                label.textContent = '☁️ 연결 오류 (재시도)';
+                dot.classList.add('hidden');
+                if (modalDot) modalDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-400';
+                if (statusTitle) {
+                    statusTitle.textContent = '연결 오류 (웹 앱 권한 "모든 사용자" 확인)';
+                    statusTitle.className = 'text-xs font-bold text-rose-300';
+                }
+            } else {
+                btn.className = 'px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-300/60 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition';
+                label.textContent = customLabel || '☁️ 구글 시트 동기화됨';
+                dot.classList.remove('hidden');
+                if (modalDot) modalDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+                if (statusTitle) {
+                    statusTitle.textContent = '구글 스프레드시트 실시간 연결됨';
+                    statusTitle.className = 'text-xs font-bold text-emerald-300';
+                }
+            }
+
+            if (lastSyncText) lastSyncText.textContent = gasSync.lastSyncLabel;
         }
 
         function saveToLocalSingleCache(payload) {
@@ -660,23 +680,15 @@
                 const raw = localStorage.getItem(LOCAL_SINGLE_STORAGE_KEY);
                 if (!raw) return;
                 const data = JSON.parse(raw);
+                if (data && data.updatedAt) {
+                    gasSync.lastKnownUpdatedAt = data.updatedAt;
+                }
                 applyRemoteBoardData(data);
             } catch (e) {}
         }
 
-        function getRoomDocRef(roomCode) {
-            return doc(fbDb, 'artifacts', appId, 'public', 'data', 'volley_rooms', roomCode);
-        }
-
-        function getMembersColRef(roomCode) {
-            return collection(fbDb, 'artifacts', appId, 'public', 'data', 'volley_rooms', roomCode, 'members');
-        }
-
-        function getMemberDocRef(roomCode, uid) {
-            return doc(fbDb, 'artifacts', appId, 'public', 'data', 'volley_rooms', roomCode, 'members', uid);
-        }
-
-        function buildSyncPayload() {
+        function buildSyncPayload(updatedAtOverride = null) {
+            const ts = updatedAtOverride || Date.now();
             return {
                 gameFormat: state.gameFormat,
                 swapped: state.swapped,
@@ -687,47 +699,136 @@
                 benchPlayers: JSON.parse(JSON.stringify(state.benchPlayers)),
                 ball: { ...state.ball },
                 strokes: JSON.parse(JSON.stringify(state.strokes)),
-                updatedBy: fbUser ? fbUser.uid : 'local',
-                updatedAt: Date.now()
+                updatedBy: gasSync.clientId,
+                updatedAt: ts
             };
         }
 
         function scheduleSyncPush(immediate = false) {
-            const payload = buildSyncPayload();
+            if (gasSync.isApplyingRemote) return;
+            const nowTs = Date.now();
+            gasSync.lastKnownUpdatedAt = nowTs;
+            const payload = buildSyncPayload(nowTs);
             saveToLocalSingleCache(payload);
 
-            if (!collabEngine.ready || !collabEngine.roomId || !fbUser || collabEngine.isApplyingRemote) return;
+            const activeUrl = getActiveGasUrl();
+            if (!activeUrl) {
+                updateCloudHeaderUI('idle');
+                return;
+            }
 
-            clearTimeout(collabEngine.pushTimer);
-            const delay = immediate ? 15 : 90;
-            collabEngine.pushTimer = setTimeout(async () => {
-                if (!collabEngine.roomId || !fbUser) return;
-                try {
-                    const latestPayload = buildSyncPayload();
-                    const serialized = JSON.stringify({
-                        g: latestPayload.gameFormat,
-                        s: latestPayload.swapped,
-                        p: latestPayload.showPositions,
-                        a: latestPayload.awayVisible,
-                        r: latestPayload.currentRotation,
-                        pl: latestPayload.players,
-                        bn: latestPayload.benchPlayers,
-                        bl: latestPayload.ball,
-                        st: latestPayload.strokes
-                    });
-                    if (serialized === collabEngine.lastPushedJson) return;
-                    collabEngine.lastPushedJson = serialized;
+            clearTimeout(gasSync.pushTimer);
+            const delay = immediate ? 350 : 1000;
+            updateCloudHeaderUI('saving');
 
-                    await setDoc(getRoomDocRef(collabEngine.roomId), latestPayload, { merge: true });
-                } catch (err) {
-                    console.warn('Sync push failed:', err);
-                }
+            gasSync.pushTimer = setTimeout(() => {
+                pushBoardToGas(buildSyncPayload(gasSync.lastKnownUpdatedAt));
             }, delay);
+        }
+
+        async function pushBoardToGas(payload) {
+            const activeUrl = getActiveGasUrl();
+            if (!activeUrl || gasSync.isPushing) return;
+            gasSync.isPushing = true;
+            updateCloudHeaderUI('saving');
+
+            try {
+                // Google Apps Script CORS preflight(OPTIONS) 회피를 위해 text/plain 사용
+                const res = await fetch(activeUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const result = await res.json();
+
+                if (result && result.status === 'skipped' && result.data) {
+                    // 서버에 더 최신 데이터가 있는 경우 해당 데이터로 동기화
+                    if (!gasSync.isDragging && !gasSync.isDrawing) {
+                        gasSync.lastKnownUpdatedAt = result.data.updatedAt || gasSync.lastKnownUpdatedAt;
+                        applyRemoteBoardData(result.data);
+                    }
+                }
+
+                const timeStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                gasSync.lastSyncLabel = `마지막 저장: ${timeStr}`;
+                updateCloudHeaderUI('synced');
+            } catch (err) {
+                console.warn('GAS push failed:', err);
+                updateCloudHeaderUI('error');
+            } finally {
+                gasSync.isPushing = false;
+            }
+        }
+
+        async function pullBoardFromGas(isInitial = false) {
+            const activeUrl = getActiveGasUrl();
+            if (!activeUrl || gasSync.isPolling || gasSync.isPushing) return;
+            if (!isInitial && (gasSync.isDragging || gasSync.isDrawing)) return;
+
+            gasSync.isPolling = true;
+            try {
+                const sep = activeUrl.includes('?') ? '&' : '?';
+                const res = await fetch(`${activeUrl}${sep}t=${Date.now()}`, {
+                    method: 'GET',
+                    cache: 'no-store'
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                const timeStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                gasSync.lastSyncLabel = `최근 확인: ${timeStr}`;
+
+                if (!data || typeof data !== 'object' || !Array.isArray(data.players)) {
+                    // 시트가 비어있으면 최초 접속 시 현재 보드 상태를 업로드
+                    if (isInitial) {
+                        await pushBoardToGas(buildSyncPayload());
+                    } else {
+                        updateCloudHeaderUI('synced');
+                    }
+                    return;
+                }
+
+                const remoteTs = Number(data.updatedAt || 0);
+                if (isInitial || (remoteTs > gasSync.lastKnownUpdatedAt && data.updatedBy !== gasSync.clientId)) {
+                    gasSync.lastKnownUpdatedAt = remoteTs;
+                    applyRemoteBoardData(data);
+                }
+
+                updateCloudHeaderUI('synced');
+            } catch (err) {
+                console.warn('GAS pull failed:', err);
+                updateCloudHeaderUI('error');
+            } finally {
+                gasSync.isPolling = false;
+            }
+        }
+
+        function startGasPollingLoop() {
+            stopGasPollingLoop();
+            const activeUrl = getActiveGasUrl();
+            updateCloudHeaderUI();
+            if (!activeUrl) return;
+
+            pullBoardFromGas(true);
+            gasSync.pollTimer = setInterval(() => {
+                pullBoardFromGas(false);
+            }, 2500);
+        }
+
+        function stopGasPollingLoop() {
+            if (gasSync.pollTimer) {
+                clearInterval(gasSync.pollTimer);
+                gasSync.pollTimer = null;
+            }
         }
 
         function applyRemoteBoardData(data) {
             if (!data) return;
-            collabEngine.isApplyingRemote = true;
+            gasSync.isApplyingRemote = true;
             try {
                 const formatChanged = data.gameFormat && data.gameFormat !== state.gameFormat;
                 if (formatChanged) {
@@ -762,18 +863,7 @@
                 }
 
                 if (Array.isArray(data.players)) {
-                    const draggingId = collabEngine.draggingPlayerId;
-                    const draggingPlayer = draggingId ? state.players.find(p => p.id === draggingId) : null;
-                    const keptCoords = draggingPlayer ? { x: draggingPlayer.x, y: draggingPlayer.y } : null;
-
                     state.players = data.players;
-                    if (keptCoords) {
-                        const restored = state.players.find(p => p.id === draggingId);
-                        if (restored) {
-                            restored.x = keptCoords.x;
-                            restored.y = keptCoords.y;
-                        }
-                    }
                     if (state.gameFormat === '6') state.players6Cache = state.players;
                     else state.players9Cache = state.players;
                 }
@@ -798,151 +888,73 @@
                 renderTokens(true);
                 redrawAllStrokes();
             } finally {
-                collabEngine.isApplyingRemote = false;
+                gasSync.isApplyingRemote = false;
             }
         }
 
-        async function registerPresence(roomCode) {
-            if (!fbUser || !fbDb) return;
-            try {
-                await setDoc(getMemberDocRef(roomCode, fbUser.uid), {
-                    uid: fbUser.uid,
-                    nickname: collabEngine.nickname,
-                    color: collabEngine.badgeColor,
-                    lastSeen: Date.now()
-                });
-            } catch (e) {
-                console.warn('Presence update failed:', e);
+        function openCollabModal() {
+            const urlInput = document.getElementById('gasUrlInput');
+            if (urlInput) {
+                urlInput.value = getActiveGasUrl();
             }
-        }
-
-        function startRoomListeners(roomCode) {
-            stopRoomListeners();
-            collabEngine.roomId = roomCode;
-            updateCollabHeaderUI();
-
-            // 1. 단일 공용 작전판 실시간 상태 구독 (최초 접속 시 저장된 상태 즉시 로드)
-            collabEngine.unsubRoom = onSnapshot(getRoomDocRef(roomCode), (snap) => {
-                if (!snap.exists()) return;
-                const data = snap.data();
-                if (!data) return;
-                if (collabEngine.hasInitialLoaded && data.updatedBy === (fbUser && fbUser.uid)) return;
-                collabEngine.hasInitialLoaded = true;
-                applyRemoteBoardData(data);
-            }, (err) => {
-                console.warn('Room listener error:', err);
-            });
-
-            // 2. 접속자(Presence) 목록 구독
-            registerPresence(roomCode);
-            collabEngine.heartbeatTimer = setInterval(() => registerPresence(roomCode), 15000);
-
-            collabEngine.unsubMembers = onSnapshot(getMembersColRef(roomCode), (snap) => {
-                const now = Date.now();
-                const activeMembers = [];
-                snap.forEach(docSnap => {
-                    const m = docSnap.data();
-                    if (m && now - (m.lastSeen || 0) < 45000) {
-                        activeMembers.push(m);
-                    }
-                });
-                renderCollabMembersUI(activeMembers);
-            }, (err) => {
-                console.warn('Members listener error:', err);
-            });
-        }
-
-        function stopRoomListeners() {
-            if (collabEngine.unsubRoom) {
-                collabEngine.unsubRoom();
-                collabEngine.unsubRoom = null;
-            }
-            if (collabEngine.unsubMembers) {
-                collabEngine.unsubMembers();
-                collabEngine.unsubMembers = null;
-            }
-            if (collabEngine.heartbeatTimer) {
-                clearInterval(collabEngine.heartbeatTimer);
-                collabEngine.heartbeatTimer = null;
-            }
-        }
-
-        function renderCollabMembersUI(members) {
-            const listEl = document.getElementById('collabMembersList');
-            const countEl = document.getElementById('collabMemberCount');
-            const btnLabel = document.getElementById('collabBtnLabel');
-
-            const count = Math.max(1, members.length);
-            if (countEl) countEl.textContent = `${count}명 접속 중`;
-            if (collabEngine.roomId && btnLabel) {
-                btnLabel.textContent = `공용 작전판 (${count}명)`;
-            }
-
-            if (!listEl) return;
-            if (members.length === 0) {
-                listEl.innerHTML = `<span class="px-2.5 py-1 rounded-full bg-indigo-600/30 border border-indigo-400/50 text-xs font-bold text-white">${escapeHtml(collabEngine.nickname)} (나)</span>`;
-                return;
-            }
-
-            listEl.innerHTML = members.map(m => {
-                const isMe = fbUser && m.uid === fbUser.uid;
-                return `
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-600 text-xs font-bold text-white">
-                        <span class="w-2 h-2 rounded-full" style="background-color:${m.color || '#38bdf8'}"></span>
-                        <span>${escapeHtml(m.nickname || '팀원')}${isMe ? ' (나)' : ''}</span>
-                    </span>
-                `;
-            }).join('');
-        }
-
-        function updateCollabHeaderUI() {
-            const btn = document.getElementById('btnCollabHeader');
-            const label = document.getElementById('collabBtnLabel');
-            const dot = document.getElementById('collabLiveDot');
-
-            if (collabEngine.roomId) {
-                btn.className = 'px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-300/60 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition';
-                label.textContent = '공용 작전판 (동기화됨)';
-                dot.classList.remove('hidden');
-            } else {
-                btn.className = 'px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white border border-slate-500/50 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition';
-                label.textContent = '로컬 자동저장';
-                dot.classList.add('hidden');
-            }
-        }
-
-        window.openCollabModal = function() {
-            const nickInput = document.getElementById('collabNicknameInput');
-            if (nickInput) nickInput.value = collabEngine.nickname;
-            updateCollabHeaderUI();
+            updateCloudHeaderUI();
             const modal = document.getElementById('collabModal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-        };
+        }
 
-        window.closeCollabModal = function() {
+        function closeCollabModal() {
             const modal = document.getElementById('collabModal');
             modal.classList.add('hidden');
             modal.classList.remove('flex');
-        };
+        }
 
-        window.updateCollabNickname = function(val, notify = false) {
-            const trimmed = (val || '').trim();
-            if (!trimmed) return;
-            collabEngine.nickname = trimmed;
-            localStorage.setItem('vb_collab_nick', trimmed);
-            if (collabEngine.roomId) {
-                registerPresence(collabEngine.roomId);
+        function saveGasUrlFromModal() {
+            const input = document.getElementById('gasUrlInput');
+            const val = (input ? input.value : '').trim();
+            if (!val) {
+                showToast('Google Apps Script 웹 앱 URL을 입력해 주세요.');
+                return;
             }
-            if (notify) showToast(`표시 이름이 '${trimmed}'(으)로 변경되었습니다.`);
-        };
+            if (!val.startsWith('https://script.google.com/')) {
+                showToast('올바른 Google Apps Script 웹 앱 주소(https://script.google.com/...)를 입력해 주세요.');
+                return;
+            }
+            localStorage.setItem(GAS_STORAGE_URL_KEY, val);
+            gasSync.url = val;
+            gasSync.lastKnownUpdatedAt = 0;
+            startGasPollingLoop();
+            closeCollabModal();
+            showToast('구글 스프레드시트와 연결되었습니다!');
+        }
 
-        window.copyCollabInviteLink = function() {
+        function clearGasUrlFromModal() {
+            localStorage.removeItem(GAS_STORAGE_URL_KEY);
+            if (!(GAS_WEB_APP_URL || '').trim()) {
+                stopGasPollingLoop();
+                gasSync.url = '';
+            }
+            const input = document.getElementById('gasUrlInput');
+            if (input) input.value = (GAS_WEB_APP_URL || '').trim();
+            updateCloudHeaderUI();
+            showToast('브라우저에 저장된 구글 시트 URL 연결이 해제되었습니다.');
+        }
+
+        function manualSyncNow() {
+            if (!getActiveGasUrl()) {
+                openCollabModal();
+                return;
+            }
+            showToast('구글 시트와 동기화 중...');
+            pullBoardFromGas(false);
+        }
+
+        function copyCollabInviteLink() {
             const url = new URL(window.location.href);
             url.searchParams.delete('room');
             url.hash = '';
-            copyTextSafe(url.toString(), '웹페이지 주소가 복사되었습니다! 팀원들과 함께 접속해 작업하세요.');
-        };
+            copyTextSafe(url.toString(), '웹페이지 주소가 복사되었습니다! 팀원들에게 공유하세요.');
+        }
 
         function copyTextSafe(text, successMsg) {
             const ta = document.createElement('textarea');
@@ -1501,12 +1513,11 @@
                 attachDragBehavior(el, (newLx, newLy) => {
                     player.x = Math.max(-14, Math.min(114, newLx));
                     player.y = Math.max(-18, Math.min(218, newLy));
+                }, () => {
+                    gasSync.isDragging = true;
+                }, () => {
+                    gasSync.isDragging = false;
                     scheduleSyncPush(false);
-                }, () => {
-                    collabEngine.draggingPlayerId = player.id;
-                }, () => {
-                    collabEngine.draggingPlayerId = null;
-                    scheduleSyncPush(true);
                 });
 
                 // 클릭 교체 대기 상태일 때 코트 선수 클릭 시 즉시 교체 실행
@@ -1545,9 +1556,11 @@
             attachDragBehavior(ballEl, (newLx, newLy) => {
                 state.ball.x = Math.max(-10, Math.min(110, newLx));
                 state.ball.y = Math.max(-15, Math.min(215, newLy));
+            }, () => {
+                gasSync.isDragging = true;
+            }, () => {
+                gasSync.isDragging = false;
                 scheduleSyncPush(false);
-            }, null, () => {
-                scheduleSyncPush(true);
             });
 
             tokensLayer.appendChild(ballEl);
@@ -1904,6 +1917,7 @@
                 if (state.tool === 'move') return;
                 if (e.cancelable) e.preventDefault();
                 isDrawing = true;
+                gasSync.isDrawing = true;
                 const pt = getCanvasPos(e);
                 const logPt = pixelToLogical(pt.x, pt.y);
 
@@ -1946,10 +1960,11 @@
             const endDraw = () => {
                 if (!isDrawing) return;
                 isDrawing = false;
+                gasSync.isDrawing = false;
                 if (currentStroke && currentStroke.points.length > 1) {
                     state.strokes.push(currentStroke);
                     state.redoStack = [];
-                    scheduleSyncPush(true);
+                    scheduleSyncPush(false);
                 }
                 currentStroke = null;
                 redrawAllStrokes();
@@ -2808,6 +2823,12 @@
             togglePasteCodeBox,
             importTacticFromCode,
             exportBoardToPNG,
+            openCollabModal,
+            closeCollabModal,
+            saveGasUrlFromModal,
+            clearGasUrlFromModal,
+            manualSyncNow,
+            copyCollabInviteLink,
             setTool,
             setColor,
             setLineWidth,
@@ -2836,6 +2857,7 @@
 
         // 초기 실행
         window.addEventListener('DOMContentLoaded', () => {
+            restoreFromLocalSingleCache();
             syncFormatUI();
             renderRosterSidebar();
             renderBenchUI();
@@ -2843,7 +2865,7 @@
             renderTokens();
             setupDrawingEvents();
             setTool('move');
-            initFirebaseSafe();
+            startGasPollingLoop();
         });
     </script>
 </body>
