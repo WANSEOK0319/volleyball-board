@@ -140,10 +140,17 @@
                 <span>포지션: ON</span>
             </button>
 
-            <!-- 저장/불러오기 모달 버튼 -->
+            <!-- 작전 저장/불러오기 모달 버튼 -->
             <button onclick="openSaveModal()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
                 <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
                 <span>작전 저장함</span>
+            </button>
+
+            <!-- 실시간 공동 작업방 버튼 -->
+            <button id="btnCollabHeader" onclick="openCollabModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/50 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span id="collabBtnLabel">같이 작업하기</span>
+                <span id="collabLiveDot" class="hidden w-2 h-2 rounded-full bg-emerald-300 animate-ping"></span>
             </button>
 
             <!-- PNG 내보내기 -->
@@ -455,40 +462,140 @@
             <div class="space-y-3">
                 <div>
                     <label class="block text-xs text-slate-400 mb-1">선수 이름 (등번호 없음)</label>
-                    <input type="text" id="modalPlayerName" maxlength="8" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" placeholder="예: 김연경">
+                    <input type="text" id="modalPlayerName" maxlength="8" placeholder="예: 김연경" onkeydown="if(event.key==='Enter') savePlayerModal()" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
                 </div>
                 <div>
                     <label class="block text-xs text-slate-400 mb-1">포지션</label>
-                    <select id="modalPlayerPos" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-                        <!-- JS에서 6인제/9인제에 맞게 동적 생성 -->
-                    </select>
+                    <select id="modalPlayerPos" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"></select>
                 </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button onclick="closeEditModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-medium hover:bg-slate-700">취소</button>
-                    <button onclick="savePlayerModal()" class="px-4 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-500">확인</button>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="closeEditModal()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">취소</button>
+                    <button onclick="savePlayerModal()" class="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold">적용</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 작전 저장함 모달 -->
+    <!-- 작전 저장함 및 공유 모달 -->
     <div id="saveModal" class="fixed inset-0 bg-black/65 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-md shadow-2xl flex flex-col max-h-[85vh]">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-md shadow-2xl flex flex-col max-h-[88vh]">
             <div class="flex items-center justify-between mb-3">
-                <h3 class="text-base font-bold text-white">작전 저장 및 불러오기</h3>
+                <h3 class="text-base font-bold text-white">작전 저장 · 파일 및 코드 공유</h3>
                 <button onclick="closeSaveModal()" class="text-slate-400 hover:text-white">✕</button>
             </div>
             
             <!-- 새 작전 저장 입력 -->
-            <div class="flex gap-2 mb-4">
+            <div class="flex gap-2 mb-3">
                 <input type="text" id="tacticTitleInput" placeholder="작전명 입력 (예: S1 리시브 중앙 속공)" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
                 <button onclick="saveCurrentTactic()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold shrink-0">현재 상태 저장</button>
             </div>
 
+            <!-- 외부 공유: 파일(.json) & 공유 코드 -->
+            <div class="bg-slate-800/75 border border-slate-700 rounded-xl p-3 mb-3 space-y-2">
+                <div class="text-[11px] font-bold text-amber-300">팀원에게 작전 전달 / 받은 작전 열기</div>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="exportTacticFile()" class="py-1.5 px-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-[11px] font-bold transition">📥 파일 저장 (.json)</button>
+                    <button onclick="triggerImportFile()" class="py-1.5 px-2.5 bg-slate-700 hover:bg-slate-600 text-emerald-300 rounded-lg text-[11px] font-bold transition">📤 파일 열기 (.json)</button>
+                    <button onclick="copyTacticShareCode()" class="py-1.5 px-2.5 bg-slate-700 hover:bg-slate-600 text-sky-300 rounded-lg text-[11px] font-bold transition">📋 공유 코드 복사</button>
+                    <button onclick="togglePasteCodeBox()" class="py-1.5 px-2.5 bg-slate-700 hover:bg-slate-600 text-amber-300 rounded-lg text-[11px] font-bold transition">📝 코드 붙여넣기</button>
+                </div>
+                <input type="file" id="tacticFileInput" accept=".json,application/json" class="hidden" onchange="handleImportFile(event)">
+                <div id="pasteCodeBox" class="hidden pt-1.5 space-y-1.5">
+                    <textarea id="pasteCodeInput" rows="2" placeholder="전달받은 작전 공유 코드를 여기에 붙여넣으세요..." class="w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-[11px] text-slate-200 font-mono focus:outline-none focus:border-amber-400"></textarea>
+                    <button onclick="importTacticFromCode()" class="w-full py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black transition">코드로 작전 불러오기</button>
+                </div>
+            </div>
+
             <!-- 저장된 목록 -->
-            <div class="text-xs font-semibold text-slate-400 mb-2">저장된 작전 목록</div>
+            <div class="text-xs font-semibold text-slate-400 mb-2">내 브라우저 작전 저장함</div>
             <div id="savedTacticsList" class="flex-1 overflow-y-auto space-y-2 pr-1">
                 <!-- JS 렌더링 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 실시간 공동 작업방 모달 -->
+    <div id="collabModal" class="fixed inset-0 bg-black/70 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-md shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+                    <h3 class="text-base font-bold text-white">실시간 공동 작업방</h3>
+                </div>
+                <button onclick="closeCollabModal()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
+            </div>
+
+            <!-- 내 닉네임 설정 -->
+            <div class="bg-slate-800/70 p-3 rounded-xl border border-slate-700/80 space-y-1.5">
+                <label class="block text-[11px] font-bold text-slate-300">내 표시 이름 (팀원에게 보이는 이름)</label>
+                <div class="flex gap-2">
+                    <input type="text" id="collabNicknameInput" maxlength="10" placeholder="예: 감독, 세터, 주장"
+                        onchange="updateCollabNickname(this.value)"
+                        class="flex-1 bg-slate-900 border border-slate-600 focus:border-indigo-400 rounded-lg px-3 py-1.5 text-xs text-white font-semibold focus:outline-none">
+                    <button onclick="updateCollabNickname(document.getElementById('collabNicknameInput').value, true)" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-bold text-slate-200 rounded-lg transition">변경</button>
+                </div>
+            </div>
+
+            <!-- 미접속 상태 UI -->
+            <div id="collabDisconnectedView" class="space-y-3">
+                <div class="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-3.5 space-y-2">
+                    <div class="text-xs font-bold text-indigo-300">1. 새 공동 작업방 만들기</div>
+                    <p class="text-[11px] text-slate-400 leading-relaxed">현재 코트의 선수 배치·후보·드로잉을 공유 방으로 열고 팀원들을 초대합니다.</p>
+                    <button onclick="createCollabRoom()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black shadow-md transition">
+                        + 새 공동 작업방 생성하기
+                    </button>
+                </div>
+
+                <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-3.5 space-y-2">
+                    <div class="text-xs font-bold text-slate-200">2. 방 코드로 입장하기</div>
+                    <div class="flex gap-2">
+                        <input type="text" id="joinRoomCodeInput" maxlength="8" placeholder="6자리 방 코드 (예: VB8421)"
+                            onkeydown="if(event.key==='Enter') joinCollabRoom()"
+                            class="flex-1 uppercase bg-slate-900 border border-slate-600 focus:border-emerald-400 rounded-lg px-3 py-2 text-xs text-white font-mono font-bold tracking-wider focus:outline-none">
+                        <button onclick="joinCollabRoom()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shrink-0 transition">입장하기</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 접속 중 상태 UI -->
+            <div id="collabConnectedView" class="hidden space-y-3">
+                <div class="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-3.5 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-emerald-300 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            실시간 동기화 연결됨
+                        </span>
+                        <span id="activeRoomCodeBadge" class="px-2.5 py-0.5 rounded-md bg-slate-900 border border-emerald-500/50 text-emerald-300 font-mono text-xs font-black tracking-widest">------</span>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button onclick="copyCollabRoomCode()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-lg text-xs font-bold transition">
+                            방 코드 복사
+                        </button>
+                        <button onclick="copyCollabInviteLink()" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition">
+                            초대 링크 복사
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 현재 접속자 목록 -->
+                <div class="bg-slate-800/70 border border-slate-700 rounded-xl p-3 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-200">함께 작업 중인 팀원</span>
+                        <span id="collabMemberCount" class="text-[11px] font-bold text-indigo-300">1명 접속</span>
+                    </div>
+                    <div id="collabMembersList" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                        <!-- JS 렌더링 -->
+                    </div>
+                </div>
+
+                <button onclick="leaveCollabRoom()" class="w-full py-2 bg-rose-950/70 hover:bg-rose-900 text-rose-200 border border-rose-700/60 rounded-xl text-xs font-bold transition">
+                    방 나가기 (혼자 작업으로 전환)
+                </button>
+            </div>
+
+            <div id="collabOfflineNotice" class="hidden text-[11px] text-amber-300 bg-amber-950/50 border border-amber-500/30 rounded-lg px-3 py-2">
+                클라우드 동기화 서버에 연결할 수 없는 오프라인 환경입니다. 혼자 작업 모드는 정상 이용 가능합니다.
             </div>
         </div>
     </div>
@@ -498,49 +605,444 @@
         알림 메시지
     </div>
 
-    <script>
-        /**
-         * ============================================================================
-         * 1. 애플리케이션 전역 상태 및 데이터 구조 (6인제 & 9인제 듀얼 지원)
-         * ============================================================================
-         */
-        const POSITIONS_6 = [
-            { code: 'S',  label: 'S (세터)' },
-            { code: 'OH', label: 'OH (아웃사이드 히터)' },
-            { code: 'MB', label: 'MB (미들 블로커)' },
-            { code: 'OP', label: 'OP (아포짓 스파이커)' },
-            { code: 'L',  label: 'L (리베로)' }
-        ];
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const POSITIONS_9 = [
-            { code: 'FL', label: 'FL (전위 레프트)' },
-            { code: 'FC', label: 'FC (전위 센터)' },
-            { code: 'FR', label: 'FR (전위 라이트)' },
-            { code: 'ML', label: 'ML (중위 레프트)' },
-            { code: 'S',  label: 'S (세터 / 중위센터)' },
-            { code: 'MR', label: 'MR (중위 라이트)' },
-            { code: 'BL', label: 'BL (후위 레프트)' },
-            { code: 'BC', label: 'BC (후위 센터)' },
-            { code: 'BR', label: 'BR (후위 라이트)' }
-        ];
+        // Firebase 안전 초기화 (로컬 오프라인/미설정 환경에서도 앱이 멈추지 않도록 보호)
+        let fbApp = null;
+        let fbAuth = null;
+        let fbDb = null;
+        let fbUser = null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'volleyball-tactics-board';
 
-        const BENCH_POSITIONS_6 = ['S', 'OH', 'MB', 'OP', 'L', 'SUB'];
-        const BENCH_POSITIONS_9 = ['S', '전위', '중위', '후위', 'SUB'];
+        const collabEngine = {
+            ready: false,
+            roomId: null,
+            nickname: localStorage.getItem('vb_collab_nick') || `코치${Math.floor(100 + Math.random() * 900)}`,
+            badgeColor: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'][Math.floor(Math.random() * 6)],
+            unsubRoom: null,
+            unsubMembers: null,
+            heartbeatTimer: null,
+            pushTimer: null,
+            draggingPlayerId: null,
+            isApplyingRemote: false,
+            lastPushedJson: ''
+        };
 
-        function createDefaultBench6() {
-            return [
-                { id: 'b6_1', team: 'home', name: '유광우', pos: 'S' },
-                { id: 'b6_2', team: 'home', name: '정한용', pos: 'OH' },
-                { id: 'b6_3', team: 'away', name: '교체1',  pos: 'SUB' }
-            ];
+        async function initFirebaseSafe() {
+            try {
+                if (typeof __firebase_config === 'undefined' || !__firebase_config) {
+                    throw new Error('Firebase config not provided');
+                }
+                const firebaseConfig = JSON.parse(__firebase_config);
+                fbApp = initializeApp(firebaseConfig);
+                fbAuth = getAuth(fbApp);
+                fbDb = getFirestore(fbApp);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(fbAuth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(fbAuth);
+                }
+
+                fbUser = fbAuth.currentUser;
+                onAuthStateChanged(fbAuth, (user) => {
+                    fbUser = user;
+                });
+
+                collabEngine.ready = true;
+
+                // URL 쿼리(?room=XXXXXX) 또는 해시(#room=XXXXXX) 자동 입장 확인
+                const searchParams = new URLSearchParams(window.location.search);
+                const queryRoom = searchParams.get('room');
+                const hashMatch = window.location.hash.match(/room=([A-Za-z0-9]{4,12})/);
+                const autoCode = (queryRoom || (hashMatch && hashMatch[1]) || '').trim().toUpperCase();
+
+                if (autoCode) {
+                    setTimeout(() => {
+                        joinCollabRoomByCode(autoCode);
+                    }, 200);
+                }
+            } catch (err) {
+                collabEngine.ready = false;
+                const notice = document.getElementById('collabOfflineNotice');
+                if (notice) notice.classList.remove('hidden');
+            }
         }
 
-        function createDefaultBench9() {
-            return [
-                { id: 'b9_1', team: 'home', name: '후보1', pos: '전위' },
-                { id: 'b9_2', team: 'home', name: '후보2', pos: '후위' },
-                { id: 'b9_3', team: 'away', name: '상대후보', pos: 'SUB' }
-            ];
+        function getRoomDocRef(roomCode) {
+            return doc(fbDb, 'artifacts', appId, 'public', 'data', 'volley_rooms', roomCode);
+        }
+
+        function getMembersColRef(roomCode) {
+            return collection(fbDb, 'artifacts', appId, 'public', 'data', 'volley_rooms', roomCode, 'members');
+        }
+
+        function getMemberDocRef(roomCode, uid) {
+            return doc(fbDb, 'artifacts', appId, 'public', 'data', 'volley_rooms', roomCode, 'members', uid);
+        }
+
+        function buildSyncPayload() {
+            return {
+                gameFormat: state.gameFormat,
+                swapped: state.swapped,
+                showPositions: state.showPositions,
+                awayVisible: state.awayVisible,
+                currentRotation: state.currentRotation,
+                players: JSON.parse(JSON.stringify(state.players)),
+                benchPlayers: JSON.parse(JSON.stringify(state.benchPlayers)),
+                ball: { ...state.ball },
+                strokes: JSON.parse(JSON.stringify(state.strokes)),
+                updatedBy: fbUser ? fbUser.uid : 'local',
+                updatedAt: Date.now()
+            };
+        }
+
+        function scheduleSyncPush(immediate = false) {
+            if (!collabEngine.ready || !collabEngine.roomId || !fbUser || collabEngine.isApplyingRemote) return;
+
+            clearTimeout(collabEngine.pushTimer);
+            const delay = immediate ? 15 : 90;
+            collabEngine.pushTimer = setTimeout(async () => {
+                if (!collabEngine.roomId || !fbUser) return;
+                try {
+                    const payload = buildSyncPayload();
+                    const serialized = JSON.stringify({
+                        g: payload.gameFormat,
+                        s: payload.swapped,
+                        p: payload.showPositions,
+                        a: payload.awayVisible,
+                        r: payload.currentRotation,
+                        pl: payload.players,
+                        bn: payload.benchPlayers,
+                        bl: payload.ball,
+                        st: payload.strokes
+                    });
+                    if (serialized === collabEngine.lastPushedJson) return;
+                    collabEngine.lastPushedJson = serialized;
+
+                    await setDoc(getRoomDocRef(collabEngine.roomId), payload, { merge: true });
+                } catch (err) {
+                    console.warn('Sync push failed:', err);
+                }
+            }, delay);
+        }
+
+        async function registerPresence(roomCode) {
+            if (!fbUser || !fbDb) return;
+            try {
+                await setDoc(getMemberDocRef(roomCode, fbUser.uid), {
+                    uid: fbUser.uid,
+                    nickname: collabEngine.nickname,
+                    color: collabEngine.badgeColor,
+                    lastSeen: Date.now()
+                });
+            } catch (e) {
+                console.warn('Presence update failed:', e);
+            }
+        }
+
+        function startRoomListeners(roomCode) {
+            stopRoomListeners();
+            collabEngine.roomId = roomCode;
+            updateCollabHeaderUI();
+
+            // 1. 실시간 보드 상태 구독
+            collabEngine.unsubRoom = onSnapshot(getRoomDocRef(roomCode), (snap) => {
+                if (!snap.exists()) return;
+                const data = snap.data();
+                if (!data || data.updatedBy === (fbUser && fbUser.uid)) return;
+
+                collabEngine.isApplyingRemote = true;
+                try {
+                    const formatChanged = data.gameFormat && data.gameFormat !== state.gameFormat;
+                    if (formatChanged) {
+                        state.gameFormat = data.gameFormat;
+                        syncFormatUI();
+                        resizeCourt();
+                    }
+
+                    if (typeof data.swapped === 'boolean' && data.swapped !== state.swapped) {
+                        state.swapped = data.swapped;
+                        drawCourtBackground(courtWrapper.clientWidth, courtWrapper.clientHeight);
+                    }
+
+                    if (typeof data.showPositions === 'boolean' && data.showPositions !== state.showPositions) {
+                        state.showPositions = data.showPositions;
+                        const btn = document.getElementById('btnTogglePos');
+                        btn.querySelector('span').textContent = `포지션: ${state.showPositions ? 'ON' : 'OFF'}`;
+                        btn.classList.toggle('text-emerald-400', state.showPositions);
+                        btn.classList.toggle('text-slate-400', !state.showPositions);
+                    }
+
+                    if (typeof data.awayVisible === 'boolean') {
+                        state.awayVisible = data.awayVisible;
+                        const chk = document.getElementById('chkAwayVisible');
+                        if (chk) chk.checked = state.awayVisible;
+                    }
+
+                    if (typeof data.currentRotation === 'number') {
+                        state.currentRotation = data.currentRotation;
+                        const badge = document.getElementById('currentRotationBadge');
+                        if (badge) badge.textContent = `S${state.currentRotation} (${state.currentRotation}번 자리)`;
+                    }
+
+                    if (Array.isArray(data.players)) {
+                        const draggingId = collabEngine.draggingPlayerId;
+                        const draggingPlayer = draggingId ? state.players.find(p => p.id === draggingId) : null;
+                        const keptCoords = draggingPlayer ? { x: draggingPlayer.x, y: draggingPlayer.y } : null;
+
+                        state.players = data.players;
+                        if (keptCoords) {
+                            const restored = state.players.find(p => p.id === draggingId);
+                            if (restored) {
+                                restored.x = keptCoords.x;
+                                restored.y = keptCoords.y;
+                            }
+                        }
+                        if (state.gameFormat === '6') state.players6Cache = state.players;
+                        else state.players9Cache = state.players;
+                    }
+
+                    if (Array.isArray(data.benchPlayers)) {
+                        state.benchPlayers = data.benchPlayers;
+                        if (state.gameFormat === '6') state.bench6Cache = state.benchPlayers;
+                        else state.bench9Cache = state.benchPlayers;
+                    }
+
+                    if (data.ball && typeof data.ball.x === 'number') {
+                        state.ball = data.ball;
+                    }
+
+                    if (Array.isArray(data.strokes)) {
+                        state.strokes = data.strokes;
+                    }
+
+                    renderRosterSidebar();
+                    renderBenchUI();
+                    renderTokens(true);
+                    redrawAllStrokes();
+                } finally {
+                    collabEngine.isApplyingRemote = false;
+                }
+            }, (err) => {
+                console.warn('Room listener error:', err);
+            });
+
+            // 2. 접속자(Presence) 목록 구독
+            registerPresence(roomCode);
+            collabEngine.heartbeatTimer = setInterval(() => registerPresence(roomCode), 15000);
+
+            collabEngine.unsubMembers = onSnapshot(getMembersColRef(roomCode), (snap) => {
+                const now = Date.now();
+                const activeMembers = [];
+                snap.forEach(docSnap => {
+                    const m = docSnap.data();
+                    if (m && now - (m.lastSeen || 0) < 45000) {
+                        activeMembers.push(m);
+                    }
+                });
+                renderCollabMembersUI(activeMembers);
+            }, (err) => {
+                console.warn('Members listener error:', err);
+            });
+        }
+
+        function stopRoomListeners() {
+            if (collabEngine.unsubRoom) {
+                collabEngine.unsubRoom();
+                collabEngine.unsubRoom = null;
+            }
+            if (collabEngine.unsubMembers) {
+                collabEngine.unsubMembers();
+                collabEngine.unsubMembers = null;
+            }
+            if (collabEngine.heartbeatTimer) {
+                clearInterval(collabEngine.heartbeatTimer);
+                collabEngine.heartbeatTimer = null;
+            }
+        }
+
+        function renderCollabMembersUI(members) {
+            const listEl = document.getElementById('collabMembersList');
+            const countEl = document.getElementById('collabMemberCount');
+            const btnLabel = document.getElementById('collabBtnLabel');
+
+            const count = Math.max(1, members.length);
+            if (countEl) countEl.textContent = `${count}명 접속 중`;
+            if (collabEngine.roomId && btnLabel) {
+                btnLabel.textContent = `방 ${collabEngine.roomId} (${count}명)`;
+            }
+
+            if (!listEl) return;
+            if (members.length === 0) {
+                listEl.innerHTML = `<span class="px-2.5 py-1 rounded-full bg-indigo-600/30 border border-indigo-400/50 text-xs font-bold text-white">${escapeHtml(collabEngine.nickname)} (나)</span>`;
+                return;
+            }
+
+            listEl.innerHTML = members.map(m => {
+                const isMe = fbUser && m.uid === fbUser.uid;
+                return `
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-600 text-xs font-bold text-white">
+                        <span class="w-2 h-2 rounded-full" style="background-color:${m.color || '#38bdf8'}"></span>
+                        <span>${escapeHtml(m.nickname || '팀원')}${isMe ? ' (나)' : ''}</span>
+                    </span>
+                `;
+            }).join('');
+        }
+
+        function updateCollabHeaderUI() {
+            const btn = document.getElementById('btnCollabHeader');
+            const label = document.getElementById('collabBtnLabel');
+            const dot = document.getElementById('collabLiveDot');
+            const disView = document.getElementById('collabDisconnectedView');
+            const conView = document.getElementById('collabConnectedView');
+            const codeBadge = document.getElementById('activeRoomCodeBadge');
+
+            if (collabEngine.roomId) {
+                btn.className = 'px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-300/60 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition';
+                label.textContent = `방 ${collabEngine.roomId}`;
+                dot.classList.remove('hidden');
+                if (disView) disView.classList.add('hidden');
+                if (conView) conView.classList.remove('hidden');
+                if (codeBadge) codeBadge.textContent = collabEngine.roomId;
+            } else {
+                btn.className = 'px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/50 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow transition';
+                label.textContent = '같이 작업하기';
+                dot.classList.add('hidden');
+                if (disView) disView.classList.remove('hidden');
+                if (conView) conView.classList.add('hidden');
+            }
+        }
+
+        window.openCollabModal = function() {
+            const nickInput = document.getElementById('collabNicknameInput');
+            if (nickInput) nickInput.value = collabEngine.nickname;
+            updateCollabHeaderUI();
+            const modal = document.getElementById('collabModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        window.closeCollabModal = function() {
+            const modal = document.getElementById('collabModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.updateCollabNickname = function(val, notify = false) {
+            const trimmed = (val || '').trim();
+            if (!trimmed) return;
+            collabEngine.nickname = trimmed;
+            localStorage.setItem('vb_collab_nick', trimmed);
+            if (collabEngine.roomId) {
+                registerPresence(collabEngine.roomId);
+            }
+            if (notify) showToast(`표시 이름이 '${trimmed}'(으)로 변경되었습니다.`);
+        };
+
+        window.createCollabRoom = async function() {
+            if (!collabEngine.ready || !fbUser) {
+                showToast('현재 오프라인 상태여서 공동 작업방을 만들 수 없습니다.');
+                return;
+            }
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = 'VB';
+            for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+
+            try {
+                const payload = buildSyncPayload();
+                await setDoc(getRoomDocRef(code), payload);
+                const url = new URL(window.location.href);
+                url.searchParams.set('room', code);
+                url.hash = '';
+                window.history.replaceState(null, '', url.toString());
+                startRoomListeners(code);
+                showToast(`공동 작업방(${code})이 생성되었습니다! 초대 링크를 공유하세요.`);
+            } catch (err) {
+                console.error(err);
+                showToast('방 생성 중 오류가 발생했습니다.');
+            }
+        };
+
+        window.joinCollabRoom = function() {
+            const raw = document.getElementById('joinRoomCodeInput').value.trim().toUpperCase();
+            if (!raw) {
+                showToast('입장할 방 코드를 입력해 주세요.');
+                return;
+            }
+            joinCollabRoomByCode(raw);
+        };
+
+        async function joinCollabRoomByCode(code) {
+            if (!collabEngine.ready || !fbUser) {
+                showToast('클라우드 연결이 준비되지 않았습니다.');
+                return;
+            }
+            try {
+                const snap = await getDoc(getRoomDocRef(code));
+                if (!snap.exists()) {
+                    showToast(`방 코드 '${code}'를 찾을 수 없습니다. 코드를 다시 확인해 주세요.`);
+                    return;
+                }
+                const url = new URL(window.location.href);
+                url.searchParams.set('room', code);
+                url.hash = '';
+                window.history.replaceState(null, '', url.toString());
+                startRoomListeners(code);
+                showToast(`공동 작업방(${code})에 자동 입장했습니다!`);
+            } catch (err) {
+                console.error(err);
+                showToast('방 입장 중 오류가 발생했습니다.');
+            }
+        }
+
+        window.leaveCollabRoom = async function() {
+            const oldRoom = collabEngine.roomId;
+            stopRoomListeners();
+            collabEngine.roomId = null;
+            const url = new URL(window.location.href);
+            url.searchParams.delete('room');
+            url.hash = '';
+            window.history.replaceState(null, '', url.toString());
+            updateCollabHeaderUI();
+            if (oldRoom && fbUser && fbDb) {
+                try {
+                    await deleteDoc(getMemberDocRef(oldRoom, fbUser.uid));
+                } catch (e) {}
+            }
+            showToast('공동 작업방에서 나와 혼자 작업 모드로 전환되었습니다.');
+        };
+
+        window.copyCollabRoomCode = function() {
+            if (!collabEngine.roomId) return;
+            copyTextSafe(collabEngine.roomId, `방 코드(${collabEngine.roomId})가 복사되었습니다.`);
+        };
+
+        window.copyCollabInviteLink = function() {
+            if (!collabEngine.roomId) return;
+            const url = new URL(window.location.href);
+            url.searchParams.set('room', collabEngine.roomId);
+            url.hash = '';
+            copyTextSafe(url.toString(), '원클릭 초대 링크가 복사되었습니다! 카톡방에 붙여넣기 하세요.');
+        };
+
+        function copyTextSafe(text, successMsg) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                showToast(successMsg);
+            } catch (e) {
+                showToast('복사에 실패했습니다. 직접 선택해 복사해 주세요.');
+            }
+            ta.remove();
         }
 
         function createDefaultPlayers6() {
@@ -637,31 +1139,58 @@
 
         /**
          * ============================================================================
-         * 2. 초기화 및 코트 크기 반응형 레이아웃 엔진
+         * 1. 기본 데이터 및 상태(State) 정의 (6인제 & 9인제 지원)
          * ============================================================================
          */
-        window.addEventListener('DOMContentLoaded', () => {
-            syncFormatUI();
-            renderRosterSidebar();
-            renderBenchUI();
-            resizeCourt();
-            renderTokens();
-            setupDrawingEvents();
-            loadSavedListUI();
-        });
+        const POSITIONS_6 = {
+            S:  { label: '세터 (S)', color: 'bg-amber-500' },
+            OH: { label: '아웃사이드 히터 (OH)', color: 'bg-blue-500' },
+            MB: { label: '미들 블로커 (MB)', color: 'bg-emerald-500' },
+            OP: { label: '아포짓 스파이커 (OP)', color: 'bg-purple-500' },
+            L:  { label: '리베로 (L)', color: 'bg-yellow-400 text-slate-900' }
+        };
 
-        function setGameFormat(format, skipSaveCache = false) {
-            if (state.gameFormat === format && !skipSaveCache) return;
+        const POSITIONS_9 = {
+            FL: { label: '전위 좌 (FL)', color: 'bg-blue-500' },
+            FC: { label: '전위 중 (FC)', color: 'bg-emerald-500' },
+            FR: { label: '전위 우 (FR)', color: 'bg-purple-500' },
+            ML: { label: '중위 좌 (ML)', color: 'bg-sky-500' },
+            S:  { label: '세터 (S)',    color: 'bg-amber-500' },
+            MR: { label: '중위 우 (MR)', color: 'bg-indigo-500' },
+            BL: { label: '후위 좌 (BL)', color: 'bg-teal-500' },
+            BC: { label: '후위 중 (BC)', color: 'bg-cyan-500' },
+            BR: { label: '후위 우 (BR)', color: 'bg-rose-500' }
+        };
 
-            // 현재 모드 선수 위치 및 후보 벤치 캐시 보관
-            if (!skipSaveCache) {
-                if (state.gameFormat === '6') {
-                    state.players6Cache = state.players;
-                    state.bench6Cache = state.benchPlayers;
-                } else {
-                    state.players9Cache = state.players;
-                    state.bench9Cache = state.benchPlayers;
-                }
+        const BENCH_POSITIONS_6 = ['S', 'OH', 'MB', 'OP', 'L', 'SUB'];
+        const BENCH_POSITIONS_9 = ['S', '전위', '중위', '후위', 'SUB'];
+
+        function createDefaultBench6() {
+            return [
+                { id: 'b6_1', team: 'home', name: '김민수', pos: 'OH' },
+                { id: 'b6_2', team: 'home', name: '박지훈', pos: 'MB' },
+                { id: 'b6_3', team: 'away', name: '상대후보', pos: 'SUB' }
+            ];
+        }
+
+        function createDefaultBench9() {
+            return [
+                { id: 'b9_1', team: 'home', name: '후보1', pos: '전위' },
+                { id: 'b9_2', team: 'home', name: '후보2', pos: '후위' },
+                { id: 'b9_3', team: 'away', name: '상대후보', pos: 'SUB' }
+            ];
+        }
+
+        function setGameFormat(format, silent = false) {
+            if (state.gameFormat === format && !silent) return;
+
+            // 현재 모드의 명단 및 후보 캐시 보관
+            if (state.gameFormat === '6') {
+                state.players6Cache = state.players;
+                state.bench6Cache = state.benchPlayers;
+            } else {
+                state.players9Cache = state.players;
+                state.bench9Cache = state.benchPlayers;
             }
 
             state.gameFormat = format;
@@ -674,7 +1203,10 @@
             renderBenchUI();
             resizeCourt();
             renderTokens(true);
-            showToast(format === '6' ? '6인제 배구 모드(9m×18m, 어택라인 포함)로 전환되었습니다.' : '9인제 배구 모드(10.5m×21m, 3×3 진형)로 전환되었습니다.');
+            if (!silent) {
+                scheduleSyncPush(true);
+                showToast(format === '6' ? '6인제 배구 모드(9m×18m, 어택라인 포함)로 전환되었습니다.' : '9인제 배구 모드(10.5m×21m, 3×3 진형)로 전환되었습니다.');
+            }
         }
 
         function syncFormatUI() {
@@ -1054,6 +1586,12 @@
                 attachDragBehavior(el, (newLx, newLy) => {
                     player.x = Math.max(-14, Math.min(114, newLx));
                     player.y = Math.max(-18, Math.min(218, newLy));
+                    scheduleSyncPush(false);
+                }, () => {
+                    collabEngine.draggingPlayerId = player.id;
+                }, () => {
+                    collabEngine.draggingPlayerId = null;
+                    scheduleSyncPush(true);
                 });
 
                 // 클릭 교체 대기 상태일 때 코트 선수 클릭 시 즉시 교체 실행
@@ -1092,6 +1630,9 @@
             attachDragBehavior(ballEl, (newLx, newLy) => {
                 state.ball.x = Math.max(-10, Math.min(110, newLx));
                 state.ball.y = Math.max(-15, Math.min(215, newLy));
+                scheduleSyncPush(false);
+            }, null, () => {
+                scheduleSyncPush(true);
             });
 
             tokensLayer.appendChild(ballEl);
@@ -1124,6 +1665,7 @@
             state.benchPlayers.push(newSub);
             nameInput.value = '';
             renderBenchUI();
+            scheduleSyncPush(true);
             showToast(`${team === 'home' ? '우리팀' : '상대팀'} 후보 '${name}' 선수가 추가되었습니다.`);
         }
 
@@ -1131,44 +1673,39 @@
             const sub = state.benchPlayers.find(b => b.id === subId);
             if (!sub) return;
             sub.name = newName.trim() || '후보';
-            renderBenchChipsOnly();
+            renderBenchChips();
+            scheduleSyncPush(true);
         }
 
         function updateBenchPos(subId, newPos) {
             const sub = state.benchPlayers.find(b => b.id === subId);
             if (!sub) return;
             sub.pos = newPos;
-            renderBenchChipsOnly();
+            renderBenchChips();
+            scheduleSyncPush(true);
         }
 
         function removeBenchPlayer(subId) {
-            if (state.selectedSubId === subId) state.selectedSubId = null;
             state.benchPlayers = state.benchPlayers.filter(b => b.id !== subId);
-            if (state.gameFormat === '6') state.bench6Cache = state.benchPlayers;
-            else state.bench9Cache = state.benchPlayers;
+            if (state.selectedSubId === subId) state.selectedSubId = null;
             renderBenchUI();
             renderTokens();
+            scheduleSyncPush(true);
             showToast('후보 선수가 목록에서 삭제되었습니다.');
         }
 
-        function toggleSelectSub(subId) {
+        function selectSubForSwap(subId) {
             if (state.selectedSubId === subId) {
                 cancelSubSelection();
                 return;
             }
-            const sub = state.benchPlayers.find(b => b.id === subId);
-            if (!sub) return;
-
-            if (sub.team === 'away' && (!state.awayVisible || state.courtMode === 'half')) {
-                showToast('현재 화면에 상대팀 코트 선수가 표시되어 있지 않습니다.');
-                return;
-            }
-
             state.selectedSubId = subId;
-            setTool('move');
+            const sub = state.benchPlayers.find(b => b.id === subId);
             renderBenchUI();
             renderTokens();
-            showToast(`'${sub.name}' 선택됨 → 코트 위 ${sub.team === 'home' ? '우리팀' : '상대팀'} 선수를 클릭해 교체하세요.`);
+            if (sub) {
+                showToast(`'${sub.name}' 후보 선택됨 → 코트 위 ${sub.team === 'home' ? '우리팀' : '상대팀'} 선수를 클릭해 교체하세요.`);
+            }
         }
 
         function cancelSubSelection() {
@@ -1187,328 +1724,264 @@
                 return;
             }
 
-            // 두 선수의 이름과 포지션 맞바꿈 (코트 좌표 및 존은 그대로 유지)
-            const prevCourtName = courtPlayer.name;
-            const prevCourtPos = courtPlayer.pos;
+            // 코트 좌표(자리)는 그대로 유지하고 이름과 포지션을 맞교환
+            const oldCourtName = courtPlayer.name;
+            const oldCourtPos = courtPlayer.pos;
 
             courtPlayer.name = sub.name;
-            if (sub.pos !== 'SUB') {
-                const validCodes = (state.gameFormat === '6' ? POSITIONS_6 : POSITIONS_9).map(o => o.code);
-                if (validCodes.includes(sub.pos)) {
+            if (sub.pos && sub.pos !== 'SUB') {
+                const validPosMap = state.gameFormat === '6' ? POSITIONS_6 : POSITIONS_9;
+                if (validPosMap[sub.pos]) {
                     courtPlayer.pos = sub.pos;
                 }
             }
 
-            sub.name = prevCourtName;
-            sub.pos = prevCourtPos;
+            sub.name = oldCourtName;
+            sub.pos = oldCourtPos;
 
             state.selectedSubId = null;
             renderRosterSidebar();
             renderBenchUI();
-            renderTokens(true);
-            showToast(`선수 교체 완료: ${courtPlayer.name} (IN) ⇄ ${sub.name} (OUT)`);
+            renderTokens();
+            scheduleSyncPush(true);
+            showToast(`선수 교체 완료: ${courtPlayer.name} (IN) ↔ ${sub.name} (OUT)`);
         }
 
         function renderBenchUI() {
-            renderBenchChipsOnly();
+            renderBenchChips();
             renderBenchSidebarList();
         }
 
-        function renderBenchChipsOnly() {
+        function renderBenchChips() {
             const homeWrap = document.getElementById('homeBenchChips');
             const awayWrap = document.getElementById('awayBenchChipsList');
-            const awayBox = document.getElementById('awayBenchChips');
             const cancelBtn = document.getElementById('btnCancelSub');
-            const hintEl = document.getElementById('subStatusHint');
 
-            homeWrap.innerHTML = '';
-            awayWrap.innerHTML = '';
-
-            const awayDisabled = !state.awayVisible || state.courtMode === 'half';
-            awayBox.classList.toggle('opacity-45', awayDisabled);
-
-            const selectedSub = state.benchPlayers.find(b => b.id === state.selectedSubId);
-            if (selectedSub) {
-                cancelBtn.classList.remove('hidden');
-                hintEl.innerHTML = `<strong class="text-amber-300">[${escapeHtml(selectedSub.name)}] 교체 대기중</strong> · 코트 위 ${selectedSub.team === 'home' ? '우리팀' : '상대팀'} 선수를 클릭하세요`;
-                hintEl.classList.remove('hidden');
-            } else {
-                cancelBtn.classList.add('hidden');
-                hintEl.textContent = '· 후보 칩을 코트 위 같은 팀 선수에게 드래그하거나 클릭 후 코트 선수를 클릭해 교체';
+            if (cancelBtn) {
+                cancelBtn.classList.toggle('hidden', !state.selectedSubId);
             }
 
-            const homeSubs = state.benchPlayers.filter(b => b.team === 'home');
-            const awaySubs = state.benchPlayers.filter(b => b.team === 'away');
+            const renderChipGroup = (team, container) => {
+                if (!container) return;
+                const list = state.benchPlayers.filter(b => b.team === team);
+                if (list.length === 0) {
+                    container.innerHTML = `<span class="text-[11px] text-slate-500">대기 후보 없음</span>`;
+                    return;
+                }
 
-            if (homeSubs.length === 0) {
-                homeWrap.innerHTML = `<span class="text-[11px] text-slate-500">대기 후보 없음</span>`;
-            } else {
-                homeSubs.forEach(sub => homeWrap.appendChild(createBenchChipElement(sub)));
-            }
+                container.innerHTML = '';
+                list.forEach(sub => {
+                    const isSelected = state.selectedSubId === sub.id;
+                    const chip = document.createElement('button');
+                    chip.type = 'button';
+                    const baseColor = team === 'home'
+                        ? 'bg-blue-600/30 hover:bg-blue-600/50 border-blue-400/50 text-blue-100'
+                        : 'bg-rose-600/30 hover:bg-rose-600/50 border-rose-400/50 text-rose-100';
+                    const activeRing = isSelected ? 'ring-2 ring-amber-400 bg-amber-500/30 text-white' : '';
 
-            if (awaySubs.length === 0) {
-                awayWrap.innerHTML = `<span class="text-[11px] text-slate-500">대기 후보 없음</span>`;
-            } else {
-                awaySubs.forEach(sub => awayWrap.appendChild(createBenchChipElement(sub)));
-            }
-        }
+                    chip.className = `px-2.5 py-1 rounded-full border text-xs font-bold flex items-center gap-1 transition cursor-grab active:cursor-grabbing ${baseColor} ${activeRing}`;
+                    chip.innerHTML = `
+                        <span>${escapeHtml(sub.name)}</span>
+                        <span class="text-[10px] opacity-80">(${escapeHtml(sub.pos)})</span>
+                    `;
 
-        function createBenchChipElement(sub) {
-            const isSelected = state.selectedSubId === sub.id;
-            const chip = document.createElement('div');
-            const baseColor = sub.team === 'home'
-                ? 'bg-blue-600/90 hover:bg-blue-500 border-blue-300/60 text-white'
-                : 'bg-rose-600/90 hover:bg-rose-500 border-rose-300/60 text-white';
+                    chip.addEventListener('click', () => selectSubForSwap(sub.id));
+                    attachBenchChipDrag(chip, sub);
+                    container.appendChild(chip);
+                });
+            };
 
-            chip.className = `inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-bold cursor-grab active:cursor-grabbing shadow-sm transition select-none ${baseColor} ${isSelected ? 'ring-2 ring-amber-300 scale-105 bg-amber-500 text-slate-950 border-white' : ''}`;
-            chip.title = '클릭하여 교체 선택 또는 코트 선수 위로 드래그하여 교체';
-            chip.innerHTML = `
-                <span class="px-1 rounded bg-black/30 text-[9px] font-black">${escapeHtml(sub.pos)}</span>
-                <span>${escapeHtml(sub.name)}</span>
-            `;
-
-            chip.addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleSelectSub(sub.id);
-            });
-
-            attachBenchChipDrag(chip, sub);
-            return chip;
+            renderChipGroup('home', homeWrap);
+            renderChipGroup('away', awayWrap);
         }
 
         function attachBenchChipDrag(chipEl, sub) {
             let ghost = null;
-            let hasMoved = false;
-            let hoveredPlayerId = null;
+            let dragging = false;
+            let startX = 0;
+            let startY = 0;
+            let hoveredTargetId = null;
 
-            const findTargetPlayerAt = (clientX, clientY) => {
-                const tokens = tokensLayer.querySelectorAll('.player-token');
-                let foundId = null;
-                tokens.forEach(tok => {
+            const onDown = (e) => {
+                const pt = e.touches ? e.touches[0] : e;
+                startX = pt.clientX;
+                startY = pt.clientY;
+                dragging = false;
+
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onUp);
+                window.addEventListener('touchmove', onMove, { passive: false });
+                window.addEventListener('touchend', onUp);
+            };
+
+            const onMove = (e) => {
+                const pt = e.touches ? e.touches[0] : e;
+                if (!dragging && Math.hypot(pt.clientX - startX, pt.clientY - startY) > 6) {
+                    dragging = true;
+                    ghost = document.createElement('div');
+                    ghost.className = `fixed z-50 pointer-events-none -translate-x-1/2 -translate-y-1/2 px-3 py-1.5 rounded-full text-xs font-black text-white shadow-2xl border-2 border-amber-300 ${sub.team === 'home' ? 'bg-blue-600' : 'bg-rose-600'}`;
+                    ghost.textContent = `${sub.name} (${sub.pos}) ⇄`;
+                    document.body.appendChild(ghost);
+                }
+
+                if (!dragging) return;
+                if (e.cancelable) e.preventDefault();
+
+                ghost.style.left = `${pt.clientX}px`;
+                ghost.style.top = `${pt.clientY}px`;
+
+                // 가장 가까운 같은 팀 코트 선수 하이라이트
+                hoveredTargetId = null;
+                document.querySelectorAll('.player-token').forEach(tok => {
                     tok.classList.remove('sub-target-highlight');
-                    const pid = tok.dataset.id;
-                    const pObj = state.players.find(p => p.id === pid);
-                    if (!pObj || pObj.team !== sub.team) return;
-
+                    const p = state.players.find(item => item.id === tok.dataset.id);
+                    if (!p || p.team !== sub.team) return;
                     const rect = tok.getBoundingClientRect();
                     const cx = rect.left + rect.width / 2;
                     const cy = rect.top + rect.height / 2;
-                    if (Math.hypot(clientX - cx, clientY - cy) <= 34) {
-                        foundId = pid;
+                    if (Math.hypot(pt.clientX - cx, pt.clientY - cy) < 38) {
+                        hoveredTargetId = p.id;
                         tok.classList.add('sub-target-highlight');
                     }
                 });
-                return foundId;
             };
 
-            const startDrag = () => {
-                hasMoved = false;
-                hoveredPlayerId = null;
-            };
+            const onUp = () => {
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('mouseup', onUp);
+                window.removeEventListener('touchmove', onMove);
+                window.removeEventListener('touchend', onUp);
 
-            const moveDrag = (clientX, clientY) => {
-                if (!hasMoved) {
-                    hasMoved = true;
-                    ghost = document.createElement('div');
-                    ghost.className = `fixed pointer-events-none z-50 px-3 py-1.5 rounded-full text-xs font-black text-white shadow-2xl border-2 border-amber-300 -translate-x-1/2 -translate-y-1/2 ${sub.team === 'home' ? 'bg-blue-600' : 'bg-rose-600'}`;
-                    ghost.textContent = `⇄ ${sub.name} (${sub.pos})`;
-                    document.body.appendChild(ghost);
-                }
-                if (ghost) {
-                    ghost.style.left = `${clientX}px`;
-                    ghost.style.top = `${clientY}px`;
-                }
-                hoveredPlayerId = findTargetPlayerAt(clientX, clientY);
-            };
-
-            const endDrag = () => {
+                document.querySelectorAll('.player-token').forEach(tok => tok.classList.remove('sub-target-highlight'));
                 if (ghost) {
                     ghost.remove();
                     ghost = null;
                 }
-                tokensLayer.querySelectorAll('.player-token').forEach(t => t.classList.remove('sub-target-highlight'));
-                if (hasMoved && hoveredPlayerId) {
-                    executeSubstitution(sub.id, hoveredPlayerId);
+                if (dragging && hoveredTargetId) {
+                    executeSubstitution(sub.id, hoveredTargetId);
                 }
             };
 
-            chipEl.addEventListener('mousedown', (e) => {
-                if (e.button !== 0) return;
-                const startX = e.clientX;
-                const startY = e.clientY;
-                startDrag();
-
-                const onMouseMove = (ev) => {
-                    if (!hasMoved && Math.hypot(ev.clientX - startX, ev.clientY - startY) < 6) return;
-                    moveDrag(ev.clientX, ev.clientY);
-                };
-                const onMouseUp = () => {
-                    window.removeEventListener('mousemove', onMouseMove);
-                    window.removeEventListener('mouseup', onMouseUp);
-                    endDrag();
-                };
-                window.addEventListener('mousemove', onMouseMove);
-                window.addEventListener('mouseup', onMouseUp);
-            });
-
-            chipEl.addEventListener('touchstart', (e) => {
-                const t = e.touches[0];
-                chipEl._startX = t.clientX;
-                chipEl._startY = t.clientY;
-                startDrag();
-            }, { passive: true });
-
-            chipEl.addEventListener('touchmove', (e) => {
-                const t = e.touches[0];
-                if (!hasMoved && Math.hypot(t.clientX - chipEl._startX, t.clientY - chipEl._startY) < 8) return;
-                e.preventDefault();
-                moveDrag(t.clientX, t.clientY);
-            }, { passive: false });
-
-            chipEl.addEventListener('touchend', () => {
-                endDrag();
-            });
+            chipEl.addEventListener('mousedown', onDown);
+            chipEl.addEventListener('touchstart', onDown, { passive: true });
         }
 
         function renderBenchSidebarList() {
             const listEl = document.getElementById('benchRosterList');
-            const countBadge = document.getElementById('benchCountBadge');
+            const badgeEl = document.getElementById('benchCountBadge');
             if (!listEl) return;
 
-            const isHalf = state.courtMode === 'half';
-            const visibleSubs = isHalf
+            const visibleBench = state.courtMode === 'half'
                 ? state.benchPlayers.filter(b => b.team === 'home')
                 : state.benchPlayers;
 
-            countBadge.textContent = `${visibleSubs.length}명 대기중`;
-            listEl.innerHTML = '';
+            if (badgeEl) badgeEl.textContent = `${visibleBench.length}명 대기중`;
 
-            if (visibleSubs.length === 0) {
+            if (visibleBench.length === 0) {
                 listEl.innerHTML = `<div class="text-center py-3 text-[11px] text-slate-500">등록된 후보 선수가 없습니다.</div>`;
                 return;
             }
 
             const posOpts = state.gameFormat === '6' ? BENCH_POSITIONS_6 : BENCH_POSITIONS_9;
 
-            visibleSubs.forEach(sub => {
-                const row = document.createElement('div');
+            listEl.innerHTML = visibleBench.map(sub => {
                 const isSelected = state.selectedSubId === sub.id;
-                row.className = `flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border ${isSelected ? 'border-amber-400 ring-1 ring-amber-400/50' : 'border-slate-700/70'}`;
-
                 const teamBadge = sub.team === 'home'
-                    ? `<span class="px-1.5 py-0.5 rounded bg-blue-600/30 text-blue-300 border border-blue-500/40 text-[10px] font-bold shrink-0">우리</span>`
-                    : `<span class="px-1.5 py-0.5 rounded bg-rose-600/30 text-rose-300 border border-rose-500/40 text-[10px] font-bold shrink-0">상대</span>`;
+                    ? `<span class="px-1.5 py-0.5 rounded bg-blue-600/30 text-blue-300 text-[10px] font-bold shrink-0">우리</span>`
+                    : `<span class="px-1.5 py-0.5 rounded bg-rose-600/30 text-rose-300 text-[10px] font-bold shrink-0">상대</span>`;
 
-                const optionsHtml = posOpts.map(p =>
-                    `<option value="${p}" ${sub.pos === p ? 'selected' : ''}>${p}</option>`
-                ).join('');
-
-                row.innerHTML = `
-                    ${teamBadge}
-                    <input type="text" value="${escapeHtml(sub.name)}" maxlength="8"
-                        onchange="updateBenchName('${sub.id}', this.value)"
-                        class="flex-1 min-w-0 bg-slate-800 border border-slate-600 focus:border-amber-400 rounded px-2 py-1 text-xs text-white font-semibold focus:outline-none"
-                        placeholder="후보 이름">
-                    <select onchange="updateBenchPos('${sub.id}', this.value)"
-                        class="bg-slate-800 border border-slate-600 rounded px-1 py-1 text-[11px] font-bold text-slate-200 focus:outline-none">
-                        ${optionsHtml}
-                    </select>
-                    <button onclick="toggleSelectSub('${sub.id}')" title="코트 선수와 교체"
-                        class="px-2 py-1 rounded text-[10px] font-bold transition shrink-0 ${isSelected ? 'bg-amber-400 text-slate-950' : 'bg-slate-700 hover:bg-amber-500 hover:text-slate-950 text-amber-300'}">
-                        교체 ⇄
-                    </button>
-                    <button onclick="removeBenchPlayer('${sub.id}')" title="후보 삭제"
-                        class="px-1.5 py-1 rounded bg-slate-800 hover:bg-rose-600 text-slate-400 hover:text-white text-[11px] transition shrink-0">
-                        ✕
-                    </button>
+                return `
+                    <div class="flex items-center gap-1.5 bg-slate-900/75 p-1.5 rounded-lg border ${isSelected ? 'border-amber-400' : 'border-slate-700/70'}">
+                        ${teamBadge}
+                        <input type="text" value="${escapeHtml(sub.name)}" maxlength="8"
+                            onchange="updateBenchName('${sub.id}', this.value)"
+                            class="flex-1 min-w-0 bg-slate-800 border border-slate-700 focus:border-amber-400 rounded px-2 py-1 text-xs text-white font-semibold focus:outline-none">
+                        <select onchange="updateBenchPos('${sub.id}', this.value)"
+                            class="bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] font-bold text-slate-200 focus:outline-none">
+                            ${posOpts.map(code => `<option value="${code}" ${sub.pos === code ? 'selected' : ''}>${code}</option>`).join('')}
+                        </select>
+                        <button onclick="selectSubForSwap('${sub.id}')" title="코트 선수와 교체"
+                            class="px-2 py-1 rounded text-[11px] font-bold ${isSelected ? 'bg-amber-500 text-slate-950' : 'bg-slate-700 hover:bg-amber-500 hover:text-slate-950 text-amber-300'} transition shrink-0">
+                            교체⇄
+                        </button>
+                        <button onclick="removeBenchPlayer('${sub.id}')" title="후보 삭제"
+                            class="p-1 text-slate-500 hover:text-rose-400 text-xs transition shrink-0">✕</button>
+                    </div>
                 `;
-                listEl.appendChild(row);
-            });
+            }).join('');
         }
 
-        // 마우스 & 터치 통합 드래그 핸들러 (코트 위 선수 및 배구공 이동)
-        function attachDragBehavior(el, onMoveLogical) {
+        // 마우스 & 터치 통합 드래그 핸들러
+        function attachDragBehavior(element, onMoveLogical, onDragStart = null, onDragEnd = null) {
             let isDragging = false;
-            let startClientX = 0;
-            let startClientY = 0;
+            let startClientX, startClientY;
+            let startElLeft, startElTop;
 
-            const onPointerDown = (clientX, clientY) => {
-                if (state.tool !== 'move') return;
-                isDragging = true;
-                startClientX = clientX;
-                startClientY = clientY;
-                el.classList.remove('smooth-move');
-            };
-
-            const onPointerMove = (clientX, clientY) => {
-                if (!isDragging) return;
-                const rect = courtWrapper.getBoundingClientRect();
-                const px = clientX - rect.left;
-                const py = clientY - rect.top;
-                const logical = pixelToLogical(px, py);
-
-                onMoveLogical(logical.x, logical.y);
-                const clamped = logicalToPixel(
-                    Math.max(-14, Math.min(114, logical.x)),
-                    Math.max(-18, Math.min(218, logical.y))
-                );
-                el.style.left = `${clamped.x}px`;
-                el.style.top = `${clamped.y}px`;
-            };
-
-            const onPointerUp = () => {
-                isDragging = false;
-            };
-
-            el.addEventListener('mousedown', (e) => {
+            const onStart = (e) => {
                 if (state.tool !== 'move') return;
                 e.stopPropagation();
-                onPointerDown(e.clientX, e.clientY);
+                isDragging = true;
+                element.classList.remove('smooth-move');
+                if (onDragStart) onDragStart();
 
-                const moveHandler = (ev) => onPointerMove(ev.clientX, ev.clientY);
-                const upHandler = () => {
-                    onPointerUp();
-                    window.removeEventListener('mousemove', moveHandler);
-                    window.removeEventListener('mouseup', upHandler);
-                };
-                window.addEventListener('mousemove', moveHandler);
-                window.addEventListener('mouseup', upHandler);
-            });
+                const point = e.touches ? e.touches[0] : e;
+                startClientX = point.clientX;
+                startClientY = point.clientY;
+                startElLeft = parseFloat(element.style.left);
+                startElTop = parseFloat(element.style.top);
 
-            el.addEventListener('touchstart', (e) => {
-                if (state.tool !== 'move') return;
-                if (e.touches.length === 1) {
-                    onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
-                }
-            }, { passive: true });
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onEnd);
+                window.addEventListener('touchmove', onMove, { passive: false });
+                window.addEventListener('touchend', onEnd);
+            };
 
-            el.addEventListener('touchmove', (e) => {
-                if (!isDragging || state.tool !== 'move') return;
-                e.preventDefault();
-                onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
-            }, { passive: false });
+            const onMove = (e) => {
+                if (!isDragging) return;
+                if (e.cancelable) e.preventDefault();
+                const point = e.touches ? e.touches[0] : e;
+                const dx = point.clientX - startClientX;
+                const dy = point.clientY - startClientY;
 
-            el.addEventListener('touchend', () => {
-                onPointerUp();
-            });
+                const newLeft = startElLeft + dx;
+                const newTop = startElTop + dy;
+
+                element.style.left = `${newLeft}px`;
+                element.style.top = `${newTop}px`;
+
+                const logical = pixelToLogical(newLeft, newTop);
+                onMoveLogical(logical.x, logical.y);
+            };
+
+            const onEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                if (onDragEnd) onDragEnd();
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('mouseup', onEnd);
+                window.removeEventListener('touchmove', onMove);
+                window.removeEventListener('touchend', onEnd);
+            };
+
+            element.addEventListener('mousedown', onStart);
+            element.addEventListener('touchstart', onStart, { passive: false });
         }
 
         /**
          * ============================================================================
-         * 5. 전술 드로잉 엔진 (자유곡선, 직선, 화살표, 점선 화살표, 지우개)
+         * 5. 전술 드로잉 캔버스 (펜, 화살표, 점선 화살표, 직선, 지우개)
          * ============================================================================
          */
-        let isDrawing = false;
-        let currentStroke = null;
-
         function setupDrawingEvents() {
-            const getPos = (e) => {
+            let isDrawing = false;
+            let currentStroke = null;
+
+            const getCanvasPos = (e) => {
                 const rect = drawCanvas.getBoundingClientRect();
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const point = e.touches ? e.touches[0] : e;
                 return {
-                    x: clientX - rect.left,
-                    y: clientY - rect.top
+                    x: point.clientX - rect.left,
+                    y: point.clientY - rect.top
                 };
             };
 
@@ -1516,220 +1989,138 @@
                 if (state.tool === 'move') return;
                 if (e.cancelable) e.preventDefault();
                 isDrawing = true;
-                const pt = getPos(e);
+                const pt = getCanvasPos(e);
+                const logPt = pixelToLogical(pt.x, pt.y);
 
                 if (state.tool === 'eraser') {
-                    eraseAtPoint(pt.x, pt.y);
+                    eraseAtPoint(logPt);
                     return;
                 }
 
                 currentStroke = {
-                    tool: state.tool,
+                    type: state.tool,
                     color: state.color,
                     width: state.lineWidth,
-                    points: [pt],
-                    start: pt,
-                    end: pt
+                    points: [logPt]
                 };
             };
 
             const moveDraw = (e) => {
-                if (!isDrawing || state.tool === 'move') return;
+                if (!isDrawing) return;
                 if (e.cancelable) e.preventDefault();
-                const pt = getPos(e);
+                const pt = getCanvasPos(e);
+                const logPt = pixelToLogical(pt.x, pt.y);
 
                 if (state.tool === 'eraser') {
-                    eraseAtPoint(pt.x, pt.y);
+                    eraseAtPoint(logPt);
                     return;
                 }
 
                 if (!currentStroke) return;
+
                 if (state.tool === 'pen') {
-                    currentStroke.points.push(pt);
+                    currentStroke.points.push(logPt);
                 } else {
-                    currentStroke.end = pt;
+                    currentStroke.points[1] = logPt;
                 }
+
                 redrawAllStrokes();
-                renderSingleStroke(drawCtx, currentStroke);
+                renderSingleStroke(currentStroke);
             };
 
             const endDraw = () => {
                 if (!isDrawing) return;
                 isDrawing = false;
-                if (currentStroke && state.tool !== 'eraser') {
-                    const dist = Math.hypot(
-                        currentStroke.end.x - currentStroke.start.x,
-                        currentStroke.end.y - currentStroke.start.y
-                    );
-                    if (currentStroke.points.length > 2 || dist > 5) {
-                        state.strokes.push(currentStroke);
-                        state.redoStack = [];
-                    }
+                if (currentStroke && currentStroke.points.length > 1) {
+                    state.strokes.push(currentStroke);
+                    state.redoStack = [];
+                    scheduleSyncPush(true);
                 }
                 currentStroke = null;
                 redrawAllStrokes();
             };
 
             drawCanvas.addEventListener('mousedown', startDraw);
-            window.addEventListener('mousemove', moveDraw);
+            drawCanvas.addEventListener('mousemove', moveDraw);
             window.addEventListener('mouseup', endDraw);
 
             drawCanvas.addEventListener('touchstart', startDraw, { passive: false });
             drawCanvas.addEventListener('touchmove', moveDraw, { passive: false });
-            drawCanvas.addEventListener('touchend', endDraw);
+            window.addEventListener('touchend', endDraw);
+        }
+
+        function eraseAtPoint(logPt) {
+            const threshold = 7;
+            const prevLen = state.strokes.length;
+            state.strokes = state.strokes.filter(stroke => {
+                return !stroke.points.some(p => Math.hypot(p.x - logPt.x, p.y - logPt.y) < threshold);
+            });
+            if (state.strokes.length !== prevLen) {
+                redrawAllStrokes();
+                scheduleSyncPush(true);
+            }
         }
 
         function redrawAllStrokes() {
             const w = courtWrapper.clientWidth;
             const h = courtWrapper.clientHeight;
             drawCtx.clearRect(0, 0, w, h);
-            state.strokes.forEach(stroke => renderSingleStroke(drawCtx, stroke));
+            state.strokes.forEach(stroke => renderSingleStroke(stroke));
         }
 
-        function renderSingleStroke(ctx, s) {
-            ctx.save();
-            ctx.strokeStyle = s.color;
-            ctx.fillStyle = s.color;
-            ctx.lineWidth = s.width;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
+        function renderSingleStroke(stroke) {
+            if (!stroke.points || stroke.points.length < 2) return;
+            const pxPoints = stroke.points.map(p => logicalToPixel(p.x, p.y));
 
-            if (s.tool === 'pen') {
-                if (s.points.length < 2) {
-                    ctx.restore();
-                    return;
-                }
-                ctx.beginPath();
-                ctx.moveTo(s.points[0].x, s.points[0].y);
-                for (let i = 1; i < s.points.length; i++) {
-                    ctx.lineTo(s.points[i].x, s.points[i].y);
-                }
-                ctx.stroke();
-            } else if (s.tool === 'line') {
-                ctx.beginPath();
-                ctx.moveTo(s.start.x, s.start.y);
-                ctx.lineTo(s.end.x, s.end.y);
-                ctx.stroke();
-            } else if (s.tool === 'arrow' || s.tool === 'dashed') {
-                if (s.tool === 'dashed') {
-                    ctx.setLineDash([8, 6]);
-                }
-                ctx.beginPath();
-                ctx.moveTo(s.start.x, s.start.y);
-                ctx.lineTo(s.end.x, s.end.y);
-                ctx.stroke();
+            drawCtx.save();
+            drawCtx.strokeStyle = stroke.color;
+            drawCtx.fillStyle = stroke.color;
+            drawCtx.lineWidth = stroke.width;
+            drawCtx.lineCap = 'round';
+            drawCtx.lineJoin = 'round';
 
-                // 화살표 머리 그리기
-                ctx.setLineDash([]);
-                const angle = Math.atan2(s.end.y - s.start.y, s.end.x - s.start.x);
-                const headLen = 10 + s.width * 1.4;
-                ctx.beginPath();
-                ctx.moveTo(s.end.x, s.end.y);
-                ctx.lineTo(
-                    s.end.x - headLen * Math.cos(angle - Math.PI / 6),
-                    s.end.y - headLen * Math.sin(angle - Math.PI / 6)
+            if (stroke.type === 'dashed') {
+                drawCtx.setLineDash([8, 7]);
+            }
+
+            drawCtx.beginPath();
+            drawCtx.moveTo(pxPoints[0].x, pxPoints[0].y);
+            for (let i = 1; i < pxPoints.length; i++) {
+                drawCtx.lineTo(pxPoints[i].x, pxPoints[i].y);
+            }
+            drawCtx.stroke();
+
+            // 화살표 머리 그리기
+            if (stroke.type === 'arrow' || stroke.type === 'dashed') {
+                drawCtx.setLineDash([]);
+                const start = pxPoints[pxPoints.length - 2];
+                const end = pxPoints[pxPoints.length - 1];
+                const angle = Math.atan2(end.y - start.y, end.x - start.x);
+                const headLen = 10 + stroke.width * 1.4;
+
+                drawCtx.beginPath();
+                drawCtx.moveTo(end.x, end.y);
+                drawCtx.lineTo(
+                    end.x - headLen * Math.cos(angle - Math.PI / 6),
+                    end.y - headLen * Math.sin(angle - Math.PI / 6)
                 );
-                ctx.lineTo(
-                    s.end.x - headLen * Math.cos(angle + Math.PI / 6),
-                    s.end.y - headLen * Math.sin(angle + Math.PI / 6)
+                drawCtx.lineTo(
+                    end.x - headLen * Math.cos(angle + Math.PI / 6),
+                    end.y - headLen * Math.sin(angle + Math.PI / 6)
                 );
-                ctx.closePath();
-                ctx.fill();
+                drawCtx.closePath();
+                drawCtx.fill();
             }
-            ctx.restore();
-        }
 
-        function eraseAtPoint(x, y) {
-            const threshold = 18;
-            const prevLen = state.strokes.length;
-            state.strokes = state.strokes.filter(s => {
-                if (s.tool === 'pen') {
-                    return !s.points.some(pt => Math.hypot(pt.x - x, pt.y - y) < threshold);
-                } else {
-                    const dist = pointToSegmentDistance(x, y, s.start.x, s.start.y, s.end.x, s.end.y);
-                    return dist >= threshold;
-                }
-            });
-            if (state.strokes.length !== prevLen) {
-                redrawAllStrokes();
-            }
-        }
-
-        function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
-            const l2 = (x2 - x1) ** 2 + (y2 - y1) ** 2;
-            if (l2 === 0) return Math.hypot(px - x1, py - y1);
-            let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
-            t = Math.max(0, Math.min(1, t));
-            return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1)));
-        }
-
-        function setTool(toolName) {
-            state.tool = toolName;
-            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-            const activeBtn = document.getElementById(`tool-${toolName}`);
-            if (activeBtn) activeBtn.classList.add('active');
-
-            if (toolName === 'move') {
-                drawCanvas.style.pointerEvents = 'none';
-                tokensLayer.style.pointerEvents = 'auto';
-            } else {
-                drawCanvas.style.pointerEvents = 'auto';
-                drawCanvas.style.cursor = toolName === 'eraser' ? 'cell' : 'crosshair';
-            }
-        }
-
-        function setColor(hex) {
-            state.color = hex;
-            document.querySelectorAll('.color-btn').forEach(btn => {
-                const isSelected = btn.dataset.color === hex;
-                btn.classList.toggle('ring-2', isSelected);
-                btn.classList.toggle('ring-offset-2', isSelected);
-                btn.classList.toggle('ring-offset-slate-900', isSelected);
-                btn.classList.toggle('ring-white', isSelected);
-            });
-            if (state.tool === 'move' || state.tool === 'eraser') {
-                setTool('pen');
-            }
-        }
-
-        function setLineWidth(w) {
-            state.lineWidth = w;
-            document.querySelectorAll('.width-btn').forEach(btn => {
-                btn.classList.remove('bg-blue-600', 'text-white');
-                btn.classList.add('bg-slate-800', 'text-slate-400');
-            });
-            const active = document.getElementById(`width-${w}`);
-            if (active) {
-                active.classList.remove('bg-slate-800', 'text-slate-400');
-                active.classList.add('bg-blue-600', 'text-white');
-            }
-        }
-
-        function undoDraw() {
-            if (state.strokes.length === 0) return;
-            state.redoStack.push(state.strokes.pop());
-            redrawAllStrokes();
-        }
-
-        function redoDraw() {
-            if (state.redoStack.length === 0) return;
-            state.strokes.push(state.redoStack.pop());
-            redrawAllStrokes();
-        }
-
-        function clearCanvas() {
-            state.strokes = [];
-            state.redoStack = [];
-            redrawAllStrokes();
-            showToast('작전판 드로잉이 초기화되었습니다.');
+            drawCtx.restore();
         }
 
         /**
          * ============================================================================
-         * 6. 배구 로테이션(S1~S6) 및 6인제·9인제 포메이션 프리셋 로직
+         * 6. 6인제 로테이션(S1~S6) & 9인제 전술 포메이션 프리셋
          * ============================================================================
          */
-        const ZONE_COORDS_HOME = {
+        const ZONE_COORDS = {
             1: { x: 80, y: 170 },
             2: { x: 80, y: 120 },
             3: { x: 50, y: 120 },
@@ -1738,157 +2129,150 @@
             6: { x: 50, y: 170 }
         };
 
-        function applyRotation(targetSetterZone) {
+        function applyRotation(rotNum) {
             if (state.gameFormat !== '6') return;
-            const homeCourtPlayers = state.players.filter(p => p.team === 'home' && !p.isLibero);
-            const setter = homeCourtPlayers.find(p => p.pos === 'S') || homeCourtPlayers[0];
-            if (!setter) return;
+            state.currentRotation = rotNum;
+            document.getElementById('currentRotationBadge').textContent = `S${rotNum} (${rotNum}번 자리)`;
 
-            const shift = (targetSetterZone - setter.zone + 6) % 6;
-            homeCourtPlayers.forEach(p => {
-                const nextZone = ((p.zone - 1 + shift) % 6) + 1;
-                p.zone = nextZone;
-                p.x = ZONE_COORDS_HOME[nextZone].x;
-                p.y = ZONE_COORDS_HOME[nextZone].y;
+            const homePlayers = state.players.filter(p => p.team === 'home' && !p.isLibero);
+            const setterIdx = homePlayers.findIndex(p => p.pos === 'S');
+            const baseIdx = setterIdx >= 0 ? setterIdx : 0;
+
+            homePlayers.forEach((p, idx) => {
+                const offset = (idx - baseIdx + 6) % 6;
+                const targetZone = ((rotNum - 1 + offset) % 6) + 1;
+                p.zone = targetZone;
+                p.x = ZONE_COORDS[targetZone].x;
+                p.y = ZONE_COORDS[targetZone].y;
             });
 
-            state.currentRotation = targetSetterZone;
-            document.getElementById('currentRotationBadge').textContent = `S${targetSetterZone} (${targetSetterZone}번 자리)`;
-            renderRosterSidebar();
             renderTokens(true);
-            showToast(`S${targetSetterZone} 로테이션으로 배치되었습니다.`);
+            scheduleSyncPush(true);
+            showToast(`S${rotNum} 로테이션 기본 위치로 정렬되었습니다.`);
         }
 
         function rotateClockwise() {
             if (state.gameFormat !== '6') return;
-            const homeCourtPlayers = state.players.filter(p => p.team === 'home' && !p.isLibero);
-            homeCourtPlayers.forEach(p => {
-                const nextZone = p.zone === 1 ? 6 : p.zone - 1;
-                p.zone = nextZone;
-                p.x = ZONE_COORDS_HOME[nextZone].x;
-                p.y = ZONE_COORDS_HOME[nextZone].y;
-            });
-
-            const setter = homeCourtPlayers.find(p => p.pos === 'S') || homeCourtPlayers[0];
-            state.currentRotation = setter ? setter.zone : 1;
-            document.getElementById('currentRotationBadge').textContent = `S${state.currentRotation} (${state.currentRotation}번 자리)`;
-            renderRosterSidebar();
-            renderTokens(true);
-            showToast(`시계방향 1칸 로테이션 완료 (현재 S${state.currentRotation})`);
+            const nextRot = state.currentRotation === 1 ? 6 : state.currentRotation - 1;
+            applyRotation(nextRot);
         }
 
         function applyFormationPreset(type) {
             if (state.gameFormat !== '6') return;
-            const homeCourt = state.players.filter(p => p.team === 'home' && !p.isLibero);
-            const libero = state.players.find(p => p.team === 'home' && p.isLibero);
+            const homePlayers = state.players.filter(p => p.team === 'home');
+            const libero = homePlayers.find(p => p.isLibero);
 
             if (type === 'serve') {
-                homeCourt.forEach(p => {
-                    p.x = ZONE_COORDS_HOME[p.zone].x;
-                    p.y = ZONE_COORDS_HOME[p.zone].y;
-                });
+                applyRotation(state.currentRotation);
                 if (libero) {
                     libero.x = 50;
                     libero.y = 188;
                 }
-                showToast('기본 6존 서브 대형이 적용되었습니다.');
+                showToast('기본 서브 & 6존 대형이 적용되었습니다.');
             } else if (type === 'receive_w') {
                 const receivers = [];
-                homeCourt.forEach(p => {
-                    if (p.pos === 'S') {
-                        p.x = p.zone >= 2 && p.zone <= 4 ? 72 : 76;
-                        p.y = p.zone >= 2 && p.zone <= 4 ? 112 : 142;
-                    } else if (p.pos === 'OH' && receivers.length < 2) {
-                        receivers.push(p);
-                    } else if (p.zone >= 2 && p.zone <= 4) {
-                        p.x = p.zone === 4 ? 22 : p.zone === 3 ? 48 : 78;
-                        p.y = 114;
-                    } else {
-                        p.x = 50;
-                        p.y = 152;
-                    }
+                if (libero && libero.visible) receivers.push(libero);
+                homePlayers.filter(p => !p.isLibero && p.pos === 'OH').forEach(p => receivers.push(p));
+
+                if (receivers.length < 3) {
+                    homePlayers.filter(p => !p.isLibero && p.pos !== 'S' && !receivers.includes(p))
+                        .slice(0, 3 - receivers.length)
+                        .forEach(p => receivers.push(p));
+                }
+
+                const rxPositions = [
+                    { x: 22, y: 162 },
+                    { x: 50, y: 170 },
+                    { x: 78, y: 162 }
+                ];
+                receivers.slice(0, 3).forEach((p, i) => {
+                    p.x = rxPositions[i].x;
+                    p.y = rxPositions[i].y;
                 });
 
-                if (receivers[0]) { receivers[0].x = 22; receivers[0].y = 166; }
-                if (receivers[1]) { receivers[1].x = 78; receivers[1].y = 166; }
-                if (libero && libero.visible) {
-                    libero.x = 50;
-                    libero.y = 172;
+                const setter = homePlayers.find(p => p.pos === 'S');
+                if (setter) {
+                    setter.x = 68;
+                    setter.y = 114;
                 }
+
+                const attackers = homePlayers.filter(p => !receivers.slice(0, 3).includes(p) && p !== setter);
+                const atkCoords = [{ x: 18, y: 126 }, { x: 48, y: 122 }, { x: 84, y: 132 }];
+                attackers.forEach((p, i) => {
+                    const c = atkCoords[i % atkCoords.length];
+                    p.x = c.x;
+                    p.y = c.y;
+                });
                 showToast('3인 서브리시브 대형이 적용되었습니다.');
             } else if (type === 'defense_perimeter') {
-                homeCourt.forEach(p => {
-                    if (p.zone === 3) { p.x = 50; p.y = 108; }
-                    else if (p.zone === 2) { p.x = 70; p.y = 108; }
-                    else if (p.zone === 4) { p.x = 24; p.y = 136; }
-                    else if (p.zone === 5) { p.x = 22; p.y = 174; }
-                    else if (p.zone === 1) { p.x = 78; p.y = 174; }
-                    else if (p.zone === 6) { p.x = 50; p.y = 184; }
+                const front = homePlayers.filter(p => !p.isLibero && [2, 3, 4].includes(p.zone));
+                const back = homePlayers.filter(p => !p.isLibero && [1, 5, 6].includes(p.zone));
+
+                const fCoords = [{ x: 42, y: 108 }, { x: 58, y: 108 }, { x: 22, y: 128 }];
+                front.forEach((p, i) => {
+                    const c = fCoords[i % fCoords.length];
+                    p.x = c.x;
+                    p.y = c.y;
                 });
+
+                const bCoords = [{ x: 80, y: 156 }, { x: 22, y: 158 }, { x: 50, y: 180 }];
+                back.forEach((p, i) => {
+                    const c = bCoords[i % bCoords.length];
+                    p.x = c.x;
+                    p.y = c.y;
+                });
+
                 if (libero && libero.visible) {
-                    libero.x = 34;
-                    libero.y = 178;
+                    libero.x = 24;
+                    libero.y = 162;
                 }
-                showToast('블로킹 및 후위 수비 대형이 적용되었습니다.');
+                showToast('블로킹 & 후위 수비 대형이 적용되었습니다.');
             }
 
             renderTokens(true);
+            scheduleSyncPush(true);
         }
 
         function apply9FormationPreset(type) {
             if (state.gameFormat !== '9') return;
             const home9 = state.players.filter(p => p.team === 'home');
-            const byPos = (code) => home9.find(p => p.pos === code);
+            if (home9.length < 9) return;
 
-            if (type === 'base333') {
-                const coords = {
-                    FL: { x: 20, y: 118 }, FC: { x: 50, y: 118 }, FR: { x: 80, y: 118 },
-                    ML: { x: 20, y: 150 }, S:  { x: 50, y: 146 }, MR: { x: 80, y: 150 },
-                    BL: { x: 20, y: 182 }, BC: { x: 50, y: 182 }, BR: { x: 80, y: 182 }
-                };
-                home9.forEach(p => {
-                    if (coords[p.pos]) {
-                        p.x = coords[p.pos].x;
-                        p.y = coords[p.pos].y;
-                    }
-                });
-                showToast('9인제 기본 3-3-3 진형이 적용되었습니다.');
-            } else if (type === 'receive9') {
-                const coords = {
-                    FL: { x: 20, y: 116 }, FC: { x: 46, y: 114 }, FR: { x: 80, y: 116 },
-                    S:  { x: 64, y: 112 },
-                    ML: { x: 18, y: 154 }, MR: { x: 82, y: 154 },
-                    BL: { x: 26, y: 178 }, BC: { x: 50, y: 182 }, BR: { x: 74, y: 178 }
-                };
-                home9.forEach(p => {
-                    if (coords[p.pos]) {
-                        p.x = coords[p.pos].x;
-                        p.y = coords[p.pos].y;
-                    }
-                });
-                if (byPos('S')) { byPos('S').x = 64; byPos('S').y = 112; }
-                showToast('9인제 리시브 대형(세터 전진 & 반원형)이 적용되었습니다.');
-            } else if (type === 'defense9') {
-                const coords = {
-                    FL: { x: 34, y: 108 }, FC: { x: 50, y: 108 }, FR: { x: 76, y: 126 },
-                    ML: { x: 22, y: 146 }, S:  { x: 52, y: 144 }, MR: { x: 78, y: 152 },
-                    BL: { x: 22, y: 180 }, BC: { x: 50, y: 185 }, BR: { x: 78, y: 180 }
-                };
-                home9.forEach(p => {
-                    if (coords[p.pos]) {
-                        p.x = coords[p.pos].x;
-                        p.y = coords[p.pos].y;
-                    }
-                });
-                showToast('9인제 블로킹 & 연타 커버 수비 대형이 적용되었습니다.');
-            }
+            const coordsMap = {
+                base333: [
+                    { x: 20, y: 118 }, { x: 50, y: 118 }, { x: 80, y: 118 },
+                    { x: 20, y: 150 }, { x: 50, y: 146 }, { x: 80, y: 150 },
+                    { x: 20, y: 182 }, { x: 50, y: 182 }, { x: 80, y: 182 }
+                ],
+                receive9: [
+                    { x: 18, y: 124 }, { x: 45, y: 122 }, { x: 82, y: 124 },
+                    { x: 20, y: 156 }, { x: 64, y: 112 }, { x: 80, y: 156 },
+                    { x: 24, y: 180 }, { x: 50, y: 174 }, { x: 76, y: 180 }
+                ],
+                defense9: [
+                    { x: 38, y: 108 }, { x: 50, y: 108 }, { x: 76, y: 126 },
+                    { x: 22, y: 144 }, { x: 52, y: 142 }, { x: 80, y: 148 },
+                    { x: 22, y: 178 }, { x: 50, y: 184 }, { x: 78, y: 178 }
+                ]
+            };
+
+            const list = coordsMap[type] || coordsMap.base333;
+            home9.forEach((p, idx) => {
+                if (list[idx]) {
+                    p.x = list[idx].x;
+                    p.y = list[idx].y;
+                }
+            });
 
             renderTokens(true);
+            scheduleSyncPush(true);
+            const label = type === 'base333' ? '기본 3-3-3 진형' : type === 'receive9' ? '9인제 리시브 대형' : '9인제 수비 대형';
+            showToast(`${label}이 적용되었습니다.`);
         }
 
         /**
          * ============================================================================
-         * 7. 우측 사이드바 선수 명단 렌더링 & 인라인 편집 모달
+         * 7. 우측 선수 명단 사이드바 & 이름 수정 모달
          * ============================================================================
          */
         function renderRosterSidebar() {
@@ -1897,33 +2281,25 @@
             homeList.innerHTML = '';
             awayList.innerHTML = '';
 
-            const posOptions = state.gameFormat === '6' ? POSITIONS_6 : POSITIONS_9;
+            const posDict = state.gameFormat === '6' ? POSITIONS_6 : POSITIONS_9;
 
             state.players.forEach(player => {
                 const row = document.createElement('div');
-                row.className = 'flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-700/70';
+                row.className = 'flex items-center gap-1.5 bg-slate-900/70 p-1.5 rounded-lg border border-slate-700/60';
 
-                const badgeText = state.gameFormat === '6'
-                    ? (player.isLibero ? 'L' : `Z${player.zone}`)
-                    : player.pos;
-
-                const badgeColor = player.team === 'home'
-                    ? (player.isLibero ? 'bg-amber-400 text-slate-950' : 'bg-blue-600 text-white')
-                    : (player.isLibero ? 'bg-emerald-400 text-slate-950' : 'bg-rose-600 text-white');
-
-                const optionsHtml = posOptions.map(opt =>
-                    `<option value="${opt.code}" ${player.pos === opt.code ? 'selected' : ''}>${opt.code}</option>`
-                ).join('');
+                const dotColor = player.team === 'home'
+                    ? (player.isLibero ? 'bg-amber-400' : 'bg-blue-500')
+                    : (player.isLibero ? 'bg-emerald-400' : 'bg-rose-500');
 
                 row.innerHTML = `
-                    <span class="w-7 h-6 rounded flex items-center justify-center text-[10px] font-black shrink-0 ${badgeColor}">${badgeText}</span>
+                    <span class="w-2.5 h-2.5 rounded-full ${dotColor} shrink-0"></span>
                     <input type="text" value="${escapeHtml(player.name)}" maxlength="8"
                         onchange="updatePlayerName('${player.id}', this.value)"
-                        class="flex-1 min-w-0 bg-slate-800 border border-slate-600 focus:border-blue-500 rounded px-2 py-1 text-xs text-white font-semibold focus:outline-none"
-                        placeholder="선수 이름">
+                        onkeyup="updatePlayerName('${player.id}', this.value, true)"
+                        class="flex-1 min-w-0 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded px-2 py-1 text-xs text-white font-semibold focus:outline-none">
                     <select onchange="updatePlayerPos('${player.id}', this.value)"
-                        class="bg-slate-800 border border-slate-600 rounded px-1.5 py-1 text-[11px] font-bold text-slate-200 focus:outline-none">
-                        ${optionsHtml}
+                        class="bg-slate-800 border border-slate-700 rounded px-1.5 py-1 text-[11px] font-bold text-slate-200 focus:outline-none">
+                        ${Object.keys(posDict).map(code => `<option value="${code}" ${player.pos === code ? 'selected' : ''}>${code}</option>`).join('')}
                     </select>
                 `;
 
@@ -1932,19 +2308,35 @@
             });
         }
 
-        function updatePlayerName(id, newName) {
+        function updatePlayerName(id, newName, live = false) {
             const p = state.players.find(item => item.id === id);
             if (!p) return;
-            p.name = newName.trim() || '선수';
-            renderTokens(false);
+            p.name = newName.trim() || (live ? '' : '선수');
+            renderTokens();
+            if (!live) scheduleSyncPush(true);
         }
 
         function updatePlayerPos(id, newPos) {
             const p = state.players.find(item => item.id === id);
             if (!p) return;
             p.pos = newPos;
-            renderRosterSidebar();
-            renderTokens(false);
+            renderTokens();
+            scheduleSyncPush(true);
+        }
+
+        function toggleLibero(team, isChecked) {
+            const p = state.players.find(item => item.team === team && item.isLibero);
+            if (p) {
+                p.visible = isChecked;
+                renderTokens();
+                scheduleSyncPush(true);
+            }
+        }
+
+        function toggleAwayTeam(isChecked) {
+            state.awayVisible = isChecked;
+            renderTokens();
+            scheduleSyncPush(true);
         }
 
         function openEditModal(playerId) {
@@ -1952,54 +2344,51 @@
             if (!p) return;
             state.editingPlayerId = playerId;
 
-            const nameInput = document.getElementById('modalPlayerName');
+            const posDict = state.gameFormat === '6' ? POSITIONS_6 : POSITIONS_9;
             const posSelect = document.getElementById('modalPlayerPos');
-            const posOptions = state.gameFormat === '6' ? POSITIONS_6 : POSITIONS_9;
+            posSelect.innerHTML = Object.entries(posDict)
+                .map(([code, info]) => `<option value="${code}">${info.label}</option>`)
+                .join('');
 
-            nameInput.value = p.name;
-            posSelect.innerHTML = posOptions.map(opt =>
-                `<option value="${opt.code}" ${p.pos === opt.code ? 'selected' : ''}>${opt.label}</option>`
-            ).join('');
-
+            document.getElementById('modalPlayerName').value = p.name;
+            posSelect.value = p.pos;
             const modal = document.getElementById('editNameModal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            setTimeout(() => nameInput.focus(), 50);
+            document.getElementById('modalPlayerName').focus();
         }
 
         function closeEditModal() {
-            state.editingPlayerId = null;
             const modal = document.getElementById('editNameModal');
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+            state.editingPlayerId = null;
         }
 
         function savePlayerModal() {
             if (!state.editingPlayerId) return;
             const p = state.players.find(item => item.id === state.editingPlayerId);
             if (p) {
-                const newName = document.getElementById('modalPlayerName').value.trim();
-                const newPos = document.getElementById('modalPlayerPos').value;
-                p.name = newName || '선수';
-                p.pos = newPos;
+                p.name = document.getElementById('modalPlayerName').value.trim() || '선수';
+                p.pos = document.getElementById('modalPlayerPos').value;
                 renderRosterSidebar();
-                renderTokens(false);
+                renderTokens();
+                scheduleSyncPush(true);
             }
             closeEditModal();
         }
 
         /**
          * ============================================================================
-         * 8. 상단 뷰 컨트롤 (전체/반코트, 진영 스왑, 포지션 ON/OFF)
+         * 8. 상단 UI 컨트롤 (코트 뷰 전환, 진영 스왑, 도구/색상 변경, 단축키)
          * ============================================================================
          */
         function setCourtMode(mode) {
             state.courtMode = mode;
             const btnFull = document.getElementById('btnViewFull');
             const btnHalf = document.getElementById('btnViewHalf');
-            const isHalf = mode === 'half';
 
-            if (!isHalf) {
+            if (mode === 'full') {
                 btnFull.className = 'px-2.5 py-1 rounded-md bg-blue-600 text-white transition';
                 btnHalf.className = 'px-2.5 py-1 rounded-md text-slate-300 hover:text-white transition';
             } else {
@@ -2007,34 +2396,31 @@
                 btnFull.className = 'px-2.5 py-1 rounded-md text-slate-300 hover:text-white transition';
             }
 
-            // 반 코트(우리팀) 모드에서는 우측 사이드바의 상대 팀 명단 및 상대 후보 입력 옵션 숨김 처리
-            const awayTeamCard = document.getElementById('awayTeamCard');
-            const awaySubOpt = document.getElementById('newSubAwayOption');
-            const newSubTeamSelect = document.getElementById('newSubTeam');
-            if (awayTeamCard) awayTeamCard.classList.toggle('hidden', isHalf);
-            if (awaySubOpt) {
-                awaySubOpt.hidden = isHalf;
-                awaySubOpt.disabled = isHalf;
-                if (isHalf && newSubTeamSelect) newSubTeamSelect.value = 'home';
-            }
+            // 반 코트(우리팀) 선택 시 우측 상대 팀 명단 및 상대 후보 입력/표시 숨김
+            const isHalf = mode === 'half';
+            const awayCard = document.getElementById('awayTeamCard');
+            const awayBenchBox = document.getElementById('awayBenchChips');
+            const newSubAwayOpt = document.getElementById('newSubAwayOption');
+            const newSubTeamSel = document.getElementById('newSubTeam');
 
-            // 상대팀 후보가 교체 선택된 상태에서 반코트로 전환 시 선택 해제
-            if (isHalf && state.selectedSubId) {
-                const sub = state.benchPlayers.find(b => b.id === state.selectedSubId);
-                if (sub && sub.team === 'away') state.selectedSubId = null;
-            }
+            if (awayCard) awayCard.classList.toggle('hidden', isHalf);
+            if (awayBenchBox) awayBenchBox.classList.toggle('hidden', isHalf);
+            if (newSubAwayOpt) newSubAwayOpt.classList.toggle('hidden', isHalf);
+            if (isHalf && newSubTeamSel) newSubTeamSel.value = 'home';
 
+            renderBenchSidebarList();
             resizeCourt();
-            renderBenchUI();
             renderTokens();
+            redrawAllStrokes();
         }
 
         function swapSides() {
             state.swapped = !state.swapped;
             drawCourtBackground(courtWrapper.clientWidth, courtWrapper.clientHeight);
-            redrawAllStrokes();
             renderTokens(true);
-            showToast('코트 상하 진영이 변경되었습니다.');
+            redrawAllStrokes();
+            scheduleSyncPush(true);
+            showToast('코트 진영이 반전되었습니다.');
         }
 
         function togglePositionTags() {
@@ -2043,47 +2429,94 @@
             btn.querySelector('span').textContent = `포지션: ${state.showPositions ? 'ON' : 'OFF'}`;
             btn.classList.toggle('text-emerald-400', state.showPositions);
             btn.classList.toggle('text-slate-400', !state.showPositions);
-            renderTokens(false);
+            renderTokens();
+            scheduleSyncPush(true);
         }
 
-        function toggleLibero(team, isVisible) {
-            const libero = state.players.find(p => p.team === team && p.isLibero);
-            if (libero) {
-                libero.visible = isVisible;
-                renderTokens(false);
+        function setTool(toolName) {
+            state.tool = toolName;
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.getElementById(`tool-${toolName}`);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            drawCanvas.style.pointerEvents = toolName === 'move' ? 'none' : 'auto';
+            drawCanvas.style.cursor = toolName === 'eraser' ? 'cell' : 'crosshair';
+        }
+
+        function setColor(hex) {
+            state.color = hex;
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                const active = btn.dataset.color === hex;
+                btn.classList.toggle('ring-2', active);
+                btn.classList.toggle('ring-offset-2', active);
+                btn.classList.toggle('ring-offset-slate-900', active);
+                btn.classList.toggle('ring-white', active);
+            });
+            if (state.tool === 'move' || state.tool === 'eraser') {
+                setTool('pen');
             }
         }
 
-        function toggleAwayTeam(isVisible) {
-            state.awayVisible = isVisible;
-            if (!isVisible && state.selectedSubId) {
-                const sub = state.benchPlayers.find(b => b.id === state.selectedSubId);
-                if (sub && sub.team === 'away') state.selectedSubId = null;
-            }
-            renderBenchUI();
-            renderTokens(false);
+        function setLineWidth(w) {
+            state.lineWidth = w;
+            [3, 6].forEach(val => {
+                const btn = document.getElementById(`width-${val}`);
+                if (!btn) return;
+                if (val === w) {
+                    btn.className = 'width-btn px-2 py-1 rounded bg-blue-600 text-[11px] font-bold text-white';
+                } else {
+                    btn.className = 'width-btn px-2 py-1 rounded bg-slate-800 text-[11px] font-bold text-slate-400';
+                }
+            });
         }
 
-        function switchSidebarTab(tab) {
-            const isRoster = tab === 'roster';
+        function undoDraw() {
+            if (state.strokes.length === 0) return;
+            state.redoStack.push(state.strokes.pop());
+            redrawAllStrokes();
+            scheduleSyncPush(true);
+        }
+
+        function redoDraw() {
+            if (state.redoStack.length === 0) return;
+            state.strokes.push(state.redoStack.pop());
+            redrawAllStrokes();
+            scheduleSyncPush(true);
+        }
+
+        function clearCanvas() {
+            if (state.strokes.length === 0) return;
+            state.strokes = [];
+            state.redoStack = [];
+            redrawAllStrokes();
+            scheduleSyncPush(true);
+            showToast('그린 화살표와 선을 모두 지웠습니다.');
+        }
+
+        function switchSidebarTab(tabName) {
+            const isRoster = tabName === 'roster';
             document.getElementById('panel-roster').classList.toggle('hidden', !isRoster);
             document.getElementById('panel-rotation').classList.toggle('hidden', isRoster);
 
-            document.getElementById('tab-roster').className = isRoster
-                ? 'flex-1 py-3 text-blue-400 border-b-2 border-blue-500 transition'
-                : 'flex-1 py-3 text-slate-400 hover:text-slate-200 transition';
-            document.getElementById('tab-rotation').className = !isRoster
-                ? 'flex-1 py-3 text-blue-400 border-b-2 border-blue-500 transition'
-                : 'flex-1 py-3 text-slate-400 hover:text-slate-200 transition';
+            const tRoster = document.getElementById('tab-roster');
+            const tRot = document.getElementById('tab-rotation');
+            if (isRoster) {
+                tRoster.className = 'flex-1 py-3 text-blue-400 border-b-2 border-blue-500 transition';
+                tRot.className = 'flex-1 py-3 text-slate-400 hover:text-slate-200 transition';
+            } else {
+                tRot.className = 'flex-1 py-3 text-blue-400 border-b-2 border-blue-500 transition';
+                tRoster.className = 'flex-1 py-3 text-slate-400 hover:text-slate-200 transition';
+            }
         }
 
-        // 단축키 지원 (입력창 포커스 중에는 무시)
+        // 키보드 단축키 지원
         window.addEventListener('keydown', (e) => {
-            if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
 
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
                 e.preventDefault();
-                undoDraw();
+                if (e.shiftKey) redoDraw();
+                else undoDraw();
             } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
                 e.preventDefault();
                 redoDraw();
@@ -2097,10 +2530,10 @@
 
         /**
          * ============================================================================
-         * 9. 로컬 스토리지 작전 저장함 & PNG 이미지 캡처 내보내기
+         * 9. 작전 저장함, 파일(.json) & 공유 코드 내보내기/불러오기, PNG 이미지 저장
          * ============================================================================
          */
-        const STORAGE_KEY = 'volleyboard_pro_tactics_v1';
+        const STORAGE_KEY = 'volleyboard_saved_tactics_v1';
 
         function openSaveModal() {
             loadSavedListUI();
@@ -2115,135 +2548,223 @@
             modal.classList.remove('flex');
         }
 
+        function buildTacticSnapshot(title = '배구 작전') {
+            return {
+                app: 'VOLLEYBOARD_PRO',
+                version: 2,
+                id: Date.now(),
+                title,
+                createdAt: new Date().toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                gameFormat: state.gameFormat,
+                rotation: state.currentRotation,
+                swapped: state.swapped,
+                showPositions: state.showPositions,
+                awayVisible: state.awayVisible,
+                players: JSON.parse(JSON.stringify(state.players)),
+                benchPlayers: JSON.parse(JSON.stringify(state.benchPlayers)),
+                ball: { ...state.ball },
+                strokes: JSON.parse(JSON.stringify(state.strokes))
+            };
+        }
+
+        function applyTacticSnapshot(item) {
+            if (!item || !Array.isArray(item.players)) {
+                showToast('유효하지 않은 작전 데이터입니다.');
+                return;
+            }
+            const targetFormat = item.gameFormat === '9' ? '9' : '6';
+            if (state.gameFormat !== targetFormat) {
+                setGameFormat(targetFormat, true);
+            }
+
+            state.players = JSON.parse(JSON.stringify(item.players));
+            if (targetFormat === '6') state.players6Cache = state.players;
+            else state.players9Cache = state.players;
+
+            state.benchPlayers = Array.isArray(item.benchPlayers)
+                ? JSON.parse(JSON.stringify(item.benchPlayers))
+                : (targetFormat === '6' ? createDefaultBench6() : createDefaultBench9());
+            if (targetFormat === '6') state.bench6Cache = state.benchPlayers;
+            else state.bench9Cache = state.benchPlayers;
+
+            if (item.ball && typeof item.ball.x === 'number') state.ball = { ...item.ball };
+            state.strokes = Array.isArray(item.strokes) ? JSON.parse(JSON.stringify(item.strokes)) : [];
+            state.redoStack = [];
+            state.selectedSubId = null;
+
+            if (typeof item.swapped === 'boolean') state.swapped = item.swapped;
+            if (typeof item.showPositions === 'boolean') state.showPositions = item.showPositions;
+            if (typeof item.awayVisible === 'boolean') state.awayVisible = item.awayVisible;
+
+            if (targetFormat === '6' && item.rotation) {
+                state.currentRotation = item.rotation;
+                document.getElementById('currentRotationBadge').textContent = `S${item.rotation} (${item.rotation}번 자리)`;
+            }
+
+            renderRosterSidebar();
+            renderBenchUI();
+            resizeCourt();
+            renderTokens(true);
+            redrawAllStrokes();
+            scheduleSyncPush(true);
+        }
+
         function saveCurrentTactic() {
             const titleInput = document.getElementById('tacticTitleInput');
-            const title = titleInput.value.trim() || `${state.gameFormat}인제 작전 (${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })})`;
+            const defaultLabel = state.gameFormat === '6'
+                ? `6인제 S${state.currentRotation} 작전`
+                : '9인제 전술 작전';
+            const title = titleInput.value.trim() || `${defaultLabel} (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
 
-            const savedList = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            const newEntry = {
-                id: Date.now().toString(),
-                title,
-                createdAt: new Date().toLocaleDateString('ko-KR'),
-                data: {
-                    gameFormat: state.gameFormat,
-                    courtMode: state.courtMode,
-                    swapped: state.swapped,
-                    awayVisible: state.awayVisible,
-                    currentRotation: state.currentRotation,
-                    players: JSON.parse(JSON.stringify(state.players)),
-                    benchPlayers: JSON.parse(JSON.stringify(state.benchPlayers)),
-                    ball: { ...state.ball },
-                    strokes: JSON.parse(JSON.stringify(state.strokes))
-                }
-            };
-
-            savedList.unshift(newEntry);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(savedList));
+            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            saved.unshift(buildTacticSnapshot(title));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.slice(0, 30)));
             titleInput.value = '';
             loadSavedListUI();
-            showToast('현재 작전이 저장되었습니다.');
+            showToast(`'${title}' 작전이 저장되었습니다.`);
         }
 
         function loadSavedListUI() {
-            const container = document.getElementById('savedTacticsList');
-            const savedList = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const listEl = document.getElementById('savedTacticsList');
+            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 
-            if (savedList.length === 0) {
-                container.innerHTML = `<div class="text-center py-8 text-xs text-slate-500">저장된 작전이 없습니다. 위 입력창에서 현재 배치를 저장해 보세요.</div>`;
+            if (saved.length === 0) {
+                listEl.innerHTML = `<div class="text-center py-6 text-xs text-slate-500">아직 저장된 작전이 없습니다.<br>위 입력창에 이름을 적고 저장해 보세요.</div>`;
                 return;
             }
 
-            container.innerHTML = savedList.map(item => {
-                const fmtBadge = (item.data.gameFormat || '6') === '9'
+            listEl.innerHTML = saved.map(item => {
+                const fmt = item.gameFormat || '6';
+                const fmtBadge = fmt === '9'
                     ? `<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold">9인제</span>`
-                    : `<span class="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[10px] font-bold">6인제</span>`;
+                    : `<span class="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[10px] font-bold">6인제 · S${item.rotation || 1}</span>`;
 
                 return `
-                <div class="flex items-center justify-between bg-slate-800 p-2.5 rounded-xl border border-slate-700">
-                    <div>
-                        <div class="flex items-center gap-1.5">
+                <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-2.5 flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5 mb-0.5">
                             ${fmtBadge}
-                            <span class="text-xs font-bold text-white">${escapeHtml(item.title)}</span>
+                            <span class="text-xs font-bold text-white truncate">${escapeHtml(item.title)}</span>
                         </div>
-                        <div class="text-[10px] text-slate-400 mt-0.5">${item.createdAt} ${(item.data.gameFormat || '6') === '6' ? `· S${item.data.currentRotation}` : ''}</div>
+                        <div class="text-[10px] text-slate-400">${item.createdAt}</div>
                     </div>
-                    <div class="flex items-center gap-1.5">
-                        <button onclick="applySavedTactic('${item.id}')" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[11px] font-bold">불러오기</button>
-                        <button onclick="deleteSavedTactic('${item.id}')" class="px-2 py-1 bg-slate-700 hover:bg-rose-600 text-slate-300 hover:text-white rounded-lg text-[11px]">삭제</button>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button onclick="applySavedTactic(${item.id})" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[11px] font-bold">불러오기</button>
+                        <button onclick="deleteSavedTactic(${item.id})" class="p-1 text-slate-400 hover:text-rose-400 text-xs" title="삭제">✕</button>
                     </div>
                 </div>
-            `}).join('');
+            `;
+            }).join('');
         }
 
         function applySavedTactic(id) {
-            const savedList = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            const found = savedList.find(item => item.id === id);
-            if (!found) return;
+            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const item = saved.find(s => s.id === id);
+            if (!item) return;
 
-            const d = found.data;
-            const targetFmt = d.gameFormat || '6';
-            state.gameFormat = targetFmt;
-            state.courtMode = d.courtMode || 'full';
-            state.swapped = !!d.swapped;
-            state.awayVisible = d.awayVisible !== false;
-            state.currentRotation = d.currentRotation || 1;
-
-            state.players = JSON.parse(JSON.stringify(d.players));
-            state.benchPlayers = JSON.parse(JSON.stringify(d.benchPlayers || (targetFmt === '6' ? createDefaultBench6() : createDefaultBench9())));
-            state.selectedSubId = null;
-            if (targetFmt === '6') {
-                state.players6Cache = state.players;
-                state.bench6Cache = state.benchPlayers;
-            } else {
-                state.players9Cache = state.players;
-                state.bench9Cache = state.benchPlayers;
-            }
-
-            state.ball = { ...d.ball };
-            state.strokes = JSON.parse(JSON.stringify(d.strokes || []));
-            state.redoStack = [];
-
-            document.getElementById('chkAwayVisible').checked = state.awayVisible;
-            syncFormatUI();
-            setCourtMode(state.courtMode);
-            renderRosterSidebar();
-            renderBenchUI();
-            renderTokens();
-            redrawAllStrokes();
+            applyTacticSnapshot(item);
             closeSaveModal();
-            showToast(`'${found.title}' (${targetFmt}인제) 작전을 불러왔습니다.`);
+            showToast(`'${item.title}' 작전을 불러왔습니다.`);
         }
 
         function deleteSavedTactic(id) {
-            const savedList = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').filter(item => item.id !== id);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(savedList));
+            let saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            saved = saved.filter(s => s.id !== id);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
             loadSavedListUI();
-            showToast('작전이 삭제되었습니다.');
         }
 
-        // 코트 + 드로잉 + 선수 이름 토큰 + 배구공 + 후보 명단을 단일 고해상도 PNG로 합성 다운로드
+        function exportTacticFile() {
+            const title = document.getElementById('tacticTitleInput').value.trim() || `배구작전_${state.gameFormat}인제`;
+            const snapshot = buildTacticSnapshot(title);
+            const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${title.replace(/\s+/g, '_')}_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('작전 파일(.json)이 다운로드되었습니다.');
+        }
+
+        function triggerImportFile() {
+            document.getElementById('tacticFileInput').click();
+        }
+
+        function handleImportFile(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    applyTacticSnapshot(parsed);
+                    closeSaveModal();
+                    showToast(`'${parsed.title || file.name}' 작전 파일을 불러왔습니다!`);
+                } catch (err) {
+                    showToast('올바른 작전 파일(.json)이 아닙니다.');
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function copyTacticShareCode() {
+            const snapshot = buildTacticSnapshot(`공유작전_${state.gameFormat}인제`);
+            const jsonStr = JSON.stringify(snapshot);
+            const encoded = 'VB1:' + btoa(unescape(encodeURIComponent(jsonStr)));
+            copyTextSafe(encoded, '작전 공유 코드가 클립보드에 복사되었습니다! 카톡방에 붙여넣기 하세요.');
+        }
+
+        function togglePasteCodeBox() {
+            const box = document.getElementById('pasteCodeBox');
+            box.classList.toggle('hidden');
+            if (!box.classList.contains('hidden')) {
+                document.getElementById('pasteCodeInput').focus();
+            }
+        }
+
+        function importTacticFromCode() {
+            const raw = document.getElementById('pasteCodeInput').value.trim();
+            if (!raw) {
+                showToast('전달받은 작전 공유 코드를 붙여넣어 주세요.');
+                return;
+            }
+            try {
+                const payloadStr = raw.startsWith('VB1:') ? raw.slice(4) : raw;
+                const decoded = decodeURIComponent(escape(atob(payloadStr)));
+                const parsed = JSON.parse(decoded);
+                applyTacticSnapshot(parsed);
+                document.getElementById('pasteCodeInput').value = '';
+                document.getElementById('pasteCodeBox').classList.add('hidden');
+                closeSaveModal();
+                showToast(`'${parsed.title || '공유 작전'}'을 불러왔습니다!`);
+            } catch (err) {
+                showToast('공유 코드 형식이 올바르지 않습니다. 전체 텍스트를 복사했는지 확인해 주세요.');
+            }
+        }
+
         function exportBoardToPNG() {
             const w = courtWrapper.clientWidth;
             const h = courtWrapper.clientHeight;
-            const scale = 2;
+            const dpr = 2;
+
             const homeSubs = state.benchPlayers.filter(b => b.team === 'home');
-            const awaySubs = state.awayVisible && state.courtMode !== 'half'
-                ? state.benchPlayers.filter(b => b.team === 'away')
-                : [];
+            const awaySubs = state.courtMode === 'full' ? state.benchPlayers.filter(b => b.team === 'away') : [];
             const hasBenchFooter = homeSubs.length > 0 || awaySubs.length > 0;
-            const footerH = hasBenchFooter ? 46 : 0;
+            const footerH = hasBenchFooter ? 42 : 0;
 
-            const exportCanvas = document.createElement('canvas');
-            exportCanvas.width = w * scale;
-            exportCanvas.height = (h + footerH) * scale;
-            const ctx = exportCanvas.getContext('2d');
-            ctx.scale(scale, scale);
+            const outCanvas = document.createElement('canvas');
+            outCanvas.width = w * dpr;
+            outCanvas.height = (h + footerH) * dpr;
+            const ctx = outCanvas.getContext('2d');
+            ctx.scale(dpr, dpr);
 
-            // 1. 배경 코트 & 드로잉 캔버스 복사
+            // 1. 코트 배경 및 드로잉 합성
             ctx.drawImage(courtBgCanvas, 0, 0, w, h);
             ctx.drawImage(drawCanvas, 0, 0, w, h);
 
-            // 2. 선수 마커 그리기 (등번호 없이 이름 표시)
+            // 2. 선수 토큰 그리기
             state.players.forEach(player => {
                 if (!player.visible) return;
                 if (player.team === 'away' && !state.awayVisible) return;
@@ -2263,15 +2784,15 @@
                     ctx.fillStyle = player.isLibero ? '#34d399' : '#e11d48';
                     ctx.strokeStyle = player.isLibero ? '#0f172a' : '#ffffff';
                 }
-
                 ctx.lineWidth = 2.5;
                 ctx.fill();
                 ctx.stroke();
 
                 // 선수 이름 텍스트
-                const name = player.name.trim() || '선수';
                 ctx.fillStyle = player.isLibero ? '#0f172a' : '#ffffff';
-                ctx.font = `900 ${name.length <= 3 ? 11 : 9}px "Noto Sans KR", sans-serif`;
+                const name = player.name || '선수';
+                const fontSize = name.length <= 2 ? 13 : name.length === 3 ? 11 : 9.5;
+                ctx.font = `900 ${fontSize}px "Noto Sans KR", sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(name, pos.x, pos.y);
@@ -2280,13 +2801,12 @@
                 if (state.showPositions) {
                     ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
                     ctx.beginPath();
-                    ctx.roundRect(pos.x - 13, pos.y + radius + 2, 26, 13, 6);
+                    ctx.roundRect(pos.x - 14, pos.y + radius - 4, 28, 13, 6);
                     ctx.fill();
-                    ctx.fillStyle = '#e2e8f0';
-                    ctx.font = 'bold 8.5px "Inter", sans-serif';
-                    ctx.fillText(player.pos, pos.x, pos.y + radius + 8.5);
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.font = '700 9px "Inter", sans-serif';
+                    ctx.fillText(player.pos, pos.x, pos.y + radius + 2.5);
                 }
-
                 ctx.restore();
             });
 
@@ -2300,13 +2820,11 @@
             ctx.lineWidth = 2;
             ctx.strokeStyle = '#1e293b';
             ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(bPos.x, bPos.y, 8, 0.2, 2.3);
-            ctx.stroke();
             ctx.restore();
 
-            // 4. 후보 선수 (BENCH) 하단 바 캡처 포함
+            // 4. 하단 후보 선수 명단 바 합성
             if (hasBenchFooter) {
+                ctx.save();
                 ctx.fillStyle = '#0f172a';
                 ctx.fillRect(0, h, w, footerH);
                 ctx.strokeStyle = '#334155';
@@ -2316,51 +2834,102 @@
                 ctx.lineTo(w, h);
                 ctx.stroke();
 
-                ctx.font = 'bold 10px "Noto Sans KR", sans-serif';
-                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#fbbf24';
+                ctx.font = '900 10px "Noto Sans KR", sans-serif';
                 ctx.textAlign = 'left';
-
-                let lineY = h + (awaySubs.length > 0 && homeSubs.length > 0 ? 14 : footerH / 2);
-                if (homeSubs.length > 0) {
-                    ctx.fillStyle = '#60a5fa';
-                    const homeText = '우리팀 후보: ' + homeSubs.map(s => `${s.name}(${s.pos})`).join(' · ');
-                    ctx.fillText(homeText, 12, lineY);
-                    lineY += 18;
-                }
-                if (awaySubs.length > 0) {
-                    ctx.fillStyle = '#fb7185';
-                    const awayText = '상대팀 후보: ' + awaySubs.map(s => `${s.name}(${s.pos})`).join(' · ');
-                    ctx.fillText(awayText, 12, lineY);
-                }
+                ctx.textBaseline = 'middle';
+                const homeText = homeSubs.map(s => `${s.name}(${s.pos})`).join(', ');
+                const awayText = awaySubs.map(s => `${s.name}(${s.pos})`).join(', ');
+                let line = `BENCH · 우리팀: ${homeText || '없음'}`;
+                if (awaySubs.length > 0) line += `  |  상대팀: ${awayText}`;
+                ctx.fillText(line, 12, h + footerH / 2);
+                ctx.restore();
             }
 
-            // 5. 다운로드 트리거
+            // 다운로드 실행
             const link = document.createElement('a');
-            link.download = `배구작전판_${state.gameFormat}인제_${new Date().toISOString().slice(0, 10)}.png`;
-            link.href = exportCanvas.toDataURL('image/png');
+            const labelTag = state.gameFormat === '6' ? `6인제_S${state.currentRotation}` : '9인제';
+            link.download = `배구작전판_${labelTag}_${Date.now()}.png`;
+            link.href = outCanvas.toDataURL('image/png');
             link.click();
-
-            showToast(`${state.gameFormat}인제 작전판 이미지(후보 명단 포함)가 저장되었습니다.`);
+            showToast('작전판 이미지가 PNG 파일로 저장되었습니다.');
         }
 
-        function escapeHtml(str) {
-            return String(str).replace(/[&<>"']/g, m => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-            }[m]));
-        }
-
+        // 유틸리티: 토스트 알림 & XSS 방지
         let toastTimer = null;
         function showToast(msg) {
             const toast = document.getElementById('toast');
             toast.textContent = msg;
             toast.classList.remove('opacity-0');
-            toast.classList.add('opacity-100');
             clearTimeout(toastTimer);
             toastTimer = setTimeout(() => {
-                toast.classList.remove('opacity-100');
                 toast.classList.add('opacity-0');
-            }, 2200);
+            }, 2600);
         }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // HTML 인라인 이벤트 핸들러(onclick, onchange 등)에서 접근 가능하도록 전역(window) 등록
+        Object.assign(window, {
+            setGameFormat,
+            setCourtMode,
+            swapSides,
+            togglePositionTags,
+            openSaveModal,
+            closeSaveModal,
+            saveCurrentTactic,
+            applySavedTactic,
+            deleteSavedTactic,
+            exportTacticFile,
+            triggerImportFile,
+            handleImportFile,
+            copyTacticShareCode,
+            togglePasteCodeBox,
+            importTacticFromCode,
+            exportBoardToPNG,
+            setTool,
+            setColor,
+            setLineWidth,
+            undoDraw,
+            redoDraw,
+            clearCanvas,
+            switchSidebarTab,
+            toggleLibero,
+            toggleAwayTeam,
+            updatePlayerName,
+            updatePlayerPos,
+            addBenchPlayer,
+            updateBenchName,
+            updateBenchPos,
+            removeBenchPlayer,
+            selectSubForSwap,
+            cancelSubSelection,
+            applyRotation,
+            rotateClockwise,
+            applyFormationPreset,
+            apply9FormationPreset,
+            openEditModal,
+            closeEditModal,
+            savePlayerModal
+        });
+
+        // 초기 실행
+        window.addEventListener('DOMContentLoaded', () => {
+            syncFormatUI();
+            renderRosterSidebar();
+            renderBenchUI();
+            resizeCourt();
+            renderTokens();
+            setupDrawingEvents();
+            setTool('move');
+            initFirebaseSafe();
+        });
     </script>
 </body>
 </html>
